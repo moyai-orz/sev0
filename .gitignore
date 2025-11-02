@@ -51,3 +51,6 @@ go.work
 
 # ---- dotenv ----
 .env
+
+# ---- Genkit ----
+.genkit

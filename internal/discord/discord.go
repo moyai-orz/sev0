@@ -82,13 +82,19 @@ func (b *DiscordBot) messageIngest(
 		slog.Error("failed to create discord user: ", "err", err)
 	}
 
-	err = b.entClient.DiscordMessage.Create().
+	create := b.entClient.DiscordMessage.Create().
 		SetID(m.ID).
 		SetContent(m.Content).
 		SetUserID(userID).
-		SetTimestamp(m.Timestamp).
-		SetEditedTimestamp(*m.EditedTimestamp).
-		OnConflictColumns(discordmessage.FieldID).UpdateNewValues().Exec(ctx)
+		SetTimestamp(m.Timestamp)
+
+	if m.EditedTimestamp != nil {
+		create.SetEditedTimestamp(*m.EditedTimestamp)
+	}
+
+	err = create.OnConflictColumns(discordmessage.FieldID).
+		UpdateNewValues().
+		Exec(ctx)
 	if err != nil {
 		slog.Error("failed to create discord message: ", "err", err)
 	}

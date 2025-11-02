@@ -35,7 +35,7 @@ func DefineRecentMessagesTool(
 		func(ctx *ai.ToolContext, input RecentMessagesInput) (*RecentMessagesOutput, error) {
 			messages, err := entClient.DiscordMessage.Query().
 				Order(discordmessage.ByTimestamp(sql.OrderDesc())).
-				Limit(input.Limit).WithUser().All(ctx)
+				Limit(max(input.Limit, 100)).WithUser().All(ctx)
 			if err != nil {
 				return nil, err
 			}

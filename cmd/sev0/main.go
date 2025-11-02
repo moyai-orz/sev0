@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -44,6 +46,8 @@ func main() {
 		return
 	}
 
+	go startHTTPServer()
+
 	if err := bot.Start(); err != nil {
 		slog.Error("failed to start discord bot", "err", err)
 		return
@@ -54,4 +58,20 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
+}
+
+func startHTTPServer() {
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "OK")
+	})
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	slog.Info("starting http server", "port", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		slog.Error("failed to start http server", "err", err)
+	}
 }

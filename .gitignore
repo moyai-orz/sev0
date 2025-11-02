@@ -48,3 +48,6 @@ Temporary Items
 
 # Go workspace file
 go.work
+
+# ---- dotenv ----
+.env

@@ -10,6 +10,8 @@ import (
 	"sev0/ent/discorduser"
 	"time"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -19,6 +21,7 @@ type DiscordMessageCreate struct {
 	config
 	mutation *DiscordMessageMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetContent sets the "content" field.
@@ -152,6 +155,7 @@ func (_c *DiscordMessageCreate) createSpec() (*DiscordMessage, *sqlgraph.CreateS
 		_node = &DiscordMessage{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(discordmessage.Table, sqlgraph.NewFieldSpec(discordmessage.FieldID, field.TypeString))
 	)
+	_spec.OnConflict = _c.conflict
 	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
@@ -188,11 +192,205 @@ func (_c *DiscordMessageCreate) createSpec() (*DiscordMessage, *sqlgraph.CreateS
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.DiscordMessage.Create().
+//		SetContent(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DiscordMessageUpsert) {
+//			SetContent(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *DiscordMessageCreate) OnConflict(opts ...sql.ConflictOption) *DiscordMessageUpsertOne {
+	_c.conflict = opts
+	return &DiscordMessageUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.DiscordMessage.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *DiscordMessageCreate) OnConflictColumns(columns ...string) *DiscordMessageUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &DiscordMessageUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// DiscordMessageUpsertOne is the builder for "upsert"-ing
+	//  one DiscordMessage node.
+	DiscordMessageUpsertOne struct {
+		create *DiscordMessageCreate
+	}
+
+	// DiscordMessageUpsert is the "OnConflict" setter.
+	DiscordMessageUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetContent sets the "content" field.
+func (u *DiscordMessageUpsert) SetContent(v string) *DiscordMessageUpsert {
+	u.Set(discordmessage.FieldContent, v)
+	return u
+}
+
+// UpdateContent sets the "content" field to the value that was provided on create.
+func (u *DiscordMessageUpsert) UpdateContent() *DiscordMessageUpsert {
+	u.SetExcluded(discordmessage.FieldContent)
+	return u
+}
+
+// SetEditedTimestamp sets the "edited_timestamp" field.
+func (u *DiscordMessageUpsert) SetEditedTimestamp(v time.Time) *DiscordMessageUpsert {
+	u.Set(discordmessage.FieldEditedTimestamp, v)
+	return u
+}
+
+// UpdateEditedTimestamp sets the "edited_timestamp" field to the value that was provided on create.
+func (u *DiscordMessageUpsert) UpdateEditedTimestamp() *DiscordMessageUpsert {
+	u.SetExcluded(discordmessage.FieldEditedTimestamp)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.DiscordMessage.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(discordmessage.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *DiscordMessageUpsertOne) UpdateNewValues() *DiscordMessageUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(discordmessage.FieldID)
+		}
+		if _, exists := u.create.mutation.AuthorID(); exists {
+			s.SetIgnore(discordmessage.FieldAuthorID)
+		}
+		if _, exists := u.create.mutation.Timestamp(); exists {
+			s.SetIgnore(discordmessage.FieldTimestamp)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.DiscordMessage.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *DiscordMessageUpsertOne) Ignore() *DiscordMessageUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *DiscordMessageUpsertOne) DoNothing() *DiscordMessageUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the DiscordMessageCreate.OnConflict
+// documentation for more info.
+func (u *DiscordMessageUpsertOne) Update(set func(*DiscordMessageUpsert)) *DiscordMessageUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&DiscordMessageUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetContent sets the "content" field.
+func (u *DiscordMessageUpsertOne) SetContent(v string) *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetContent(v)
+	})
+}
+
+// UpdateContent sets the "content" field to the value that was provided on create.
+func (u *DiscordMessageUpsertOne) UpdateContent() *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateContent()
+	})
+}
+
+// SetEditedTimestamp sets the "edited_timestamp" field.
+func (u *DiscordMessageUpsertOne) SetEditedTimestamp(v time.Time) *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetEditedTimestamp(v)
+	})
+}
+
+// UpdateEditedTimestamp sets the "edited_timestamp" field to the value that was provided on create.
+func (u *DiscordMessageUpsertOne) UpdateEditedTimestamp() *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateEditedTimestamp()
+	})
+}
+
+// Exec executes the query.
+func (u *DiscordMessageUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for DiscordMessageCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *DiscordMessageUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *DiscordMessageUpsertOne) ID(ctx context.Context) (id string, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: DiscordMessageUpsertOne.ID is not supported by MySQL driver. Use DiscordMessageUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *DiscordMessageUpsertOne) IDX(ctx context.Context) string {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // DiscordMessageCreateBulk is the builder for creating many DiscordMessage entities in bulk.
 type DiscordMessageCreateBulk struct {
 	config
 	err      error
 	builders []*DiscordMessageCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the DiscordMessage entities in the database.
@@ -221,6 +419,7 @@ func (_c *DiscordMessageCreateBulk) Save(ctx context.Context) ([]*DiscordMessage
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -267,6 +466,154 @@ func (_c *DiscordMessageCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *DiscordMessageCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.DiscordMessage.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DiscordMessageUpsert) {
+//			SetContent(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *DiscordMessageCreateBulk) OnConflict(opts ...sql.ConflictOption) *DiscordMessageUpsertBulk {
+	_c.conflict = opts
+	return &DiscordMessageUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.DiscordMessage.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *DiscordMessageCreateBulk) OnConflictColumns(columns ...string) *DiscordMessageUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &DiscordMessageUpsertBulk{
+		create: _c,
+	}
+}
+
+// DiscordMessageUpsertBulk is the builder for "upsert"-ing
+// a bulk of DiscordMessage nodes.
+type DiscordMessageUpsertBulk struct {
+	create *DiscordMessageCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.DiscordMessage.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(discordmessage.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *DiscordMessageUpsertBulk) UpdateNewValues() *DiscordMessageUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(discordmessage.FieldID)
+			}
+			if _, exists := b.mutation.AuthorID(); exists {
+				s.SetIgnore(discordmessage.FieldAuthorID)
+			}
+			if _, exists := b.mutation.Timestamp(); exists {
+				s.SetIgnore(discordmessage.FieldTimestamp)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.DiscordMessage.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *DiscordMessageUpsertBulk) Ignore() *DiscordMessageUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *DiscordMessageUpsertBulk) DoNothing() *DiscordMessageUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the DiscordMessageCreateBulk.OnConflict
+// documentation for more info.
+func (u *DiscordMessageUpsertBulk) Update(set func(*DiscordMessageUpsert)) *DiscordMessageUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&DiscordMessageUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetContent sets the "content" field.
+func (u *DiscordMessageUpsertBulk) SetContent(v string) *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetContent(v)
+	})
+}
+
+// UpdateContent sets the "content" field to the value that was provided on create.
+func (u *DiscordMessageUpsertBulk) UpdateContent() *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateContent()
+	})
+}
+
+// SetEditedTimestamp sets the "edited_timestamp" field.
+func (u *DiscordMessageUpsertBulk) SetEditedTimestamp(v time.Time) *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetEditedTimestamp(v)
+	})
+}
+
+// UpdateEditedTimestamp sets the "edited_timestamp" field to the value that was provided on create.
+func (u *DiscordMessageUpsertBulk) UpdateEditedTimestamp() *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateEditedTimestamp()
+	})
+}
+
+// Exec executes the query.
+func (u *DiscordMessageUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the DiscordMessageCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for DiscordMessageCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *DiscordMessageUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

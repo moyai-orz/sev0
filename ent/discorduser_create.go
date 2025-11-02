@@ -9,6 +9,8 @@ import (
 	"sev0/ent/discordmessage"
 	"sev0/ent/discorduser"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
@@ -18,6 +20,7 @@ type DiscordUserCreate struct {
 	config
 	mutation *DiscordUserMutation
 	hooks    []Hook
+	conflict []sql.ConflictOption
 }
 
 // SetUsername sets the "username" field.
@@ -139,6 +142,7 @@ func (_c *DiscordUserCreate) createSpec() (*DiscordUser, *sqlgraph.CreateSpec) {
 		_node = &DiscordUser{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(discorduser.Table, sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString))
 	)
+	_spec.OnConflict = _c.conflict
 	if id, ok := _c.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
@@ -170,11 +174,199 @@ func (_c *DiscordUserCreate) createSpec() (*DiscordUser, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.DiscordUser.Create().
+//		SetUsername(v).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DiscordUserUpsert) {
+//			SetUsername(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *DiscordUserCreate) OnConflict(opts ...sql.ConflictOption) *DiscordUserUpsertOne {
+	_c.conflict = opts
+	return &DiscordUserUpsertOne{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.DiscordUser.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *DiscordUserCreate) OnConflictColumns(columns ...string) *DiscordUserUpsertOne {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &DiscordUserUpsertOne{
+		create: _c,
+	}
+}
+
+type (
+	// DiscordUserUpsertOne is the builder for "upsert"-ing
+	//  one DiscordUser node.
+	DiscordUserUpsertOne struct {
+		create *DiscordUserCreate
+	}
+
+	// DiscordUserUpsert is the "OnConflict" setter.
+	DiscordUserUpsert struct {
+		*sql.UpdateSet
+	}
+)
+
+// SetUsername sets the "username" field.
+func (u *DiscordUserUpsert) SetUsername(v string) *DiscordUserUpsert {
+	u.Set(discorduser.FieldUsername, v)
+	return u
+}
+
+// UpdateUsername sets the "username" field to the value that was provided on create.
+func (u *DiscordUserUpsert) UpdateUsername() *DiscordUserUpsert {
+	u.SetExcluded(discorduser.FieldUsername)
+	return u
+}
+
+// SetGlobalName sets the "global_name" field.
+func (u *DiscordUserUpsert) SetGlobalName(v string) *DiscordUserUpsert {
+	u.Set(discorduser.FieldGlobalName, v)
+	return u
+}
+
+// UpdateGlobalName sets the "global_name" field to the value that was provided on create.
+func (u *DiscordUserUpsert) UpdateGlobalName() *DiscordUserUpsert {
+	u.SetExcluded(discorduser.FieldGlobalName)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
+// Using this option is equivalent to using:
+//
+//	client.DiscordUser.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(discorduser.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *DiscordUserUpsertOne) UpdateNewValues() *DiscordUserUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(discorduser.FieldID)
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.DiscordUser.Create().
+//	    OnConflict(sql.ResolveWithIgnore()).
+//	    Exec(ctx)
+func (u *DiscordUserUpsertOne) Ignore() *DiscordUserUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *DiscordUserUpsertOne) DoNothing() *DiscordUserUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the DiscordUserCreate.OnConflict
+// documentation for more info.
+func (u *DiscordUserUpsertOne) Update(set func(*DiscordUserUpsert)) *DiscordUserUpsertOne {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&DiscordUserUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetUsername sets the "username" field.
+func (u *DiscordUserUpsertOne) SetUsername(v string) *DiscordUserUpsertOne {
+	return u.Update(func(s *DiscordUserUpsert) {
+		s.SetUsername(v)
+	})
+}
+
+// UpdateUsername sets the "username" field to the value that was provided on create.
+func (u *DiscordUserUpsertOne) UpdateUsername() *DiscordUserUpsertOne {
+	return u.Update(func(s *DiscordUserUpsert) {
+		s.UpdateUsername()
+	})
+}
+
+// SetGlobalName sets the "global_name" field.
+func (u *DiscordUserUpsertOne) SetGlobalName(v string) *DiscordUserUpsertOne {
+	return u.Update(func(s *DiscordUserUpsert) {
+		s.SetGlobalName(v)
+	})
+}
+
+// UpdateGlobalName sets the "global_name" field to the value that was provided on create.
+func (u *DiscordUserUpsertOne) UpdateGlobalName() *DiscordUserUpsertOne {
+	return u.Update(func(s *DiscordUserUpsert) {
+		s.UpdateGlobalName()
+	})
+}
+
+// Exec executes the query.
+func (u *DiscordUserUpsertOne) Exec(ctx context.Context) error {
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for DiscordUserCreate.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *DiscordUserUpsertOne) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// Exec executes the UPSERT query and returns the inserted/updated ID.
+func (u *DiscordUserUpsertOne) ID(ctx context.Context) (id string, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: DiscordUserUpsertOne.ID is not supported by MySQL driver. Use DiscordUserUpsertOne.Exec instead")
+	}
+	node, err := u.create.Save(ctx)
+	if err != nil {
+		return id, err
+	}
+	return node.ID, nil
+}
+
+// IDX is like ID, but panics if an error occurs.
+func (u *DiscordUserUpsertOne) IDX(ctx context.Context) string {
+	id, err := u.ID(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
 // DiscordUserCreateBulk is the builder for creating many DiscordUser entities in bulk.
 type DiscordUserCreateBulk struct {
 	config
 	err      error
 	builders []*DiscordUserCreate
+	conflict []sql.ConflictOption
 }
 
 // Save creates the DiscordUser entities in the database.
@@ -203,6 +395,7 @@ func (_c *DiscordUserCreateBulk) Save(ctx context.Context) ([]*DiscordUser, erro
 					_, err = mutators[i+1].Mutate(root, _c.builders[i+1].mutation)
 				} else {
 					spec := &sqlgraph.BatchCreateSpec{Nodes: specs}
+					spec.OnConflict = _c.conflict
 					// Invoke the actual operation on the latest mutation in the chain.
 					if err = sqlgraph.BatchCreate(ctx, _c.driver, spec); err != nil {
 						if sqlgraph.IsConstraintError(err) {
@@ -249,6 +442,148 @@ func (_c *DiscordUserCreateBulk) Exec(ctx context.Context) error {
 // ExecX is like Exec, but panics if an error occurs.
 func (_c *DiscordUserCreateBulk) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
+		panic(err)
+	}
+}
+
+// OnConflict allows configuring the `ON CONFLICT` / `ON DUPLICATE KEY` clause
+// of the `INSERT` statement. For example:
+//
+//	client.DiscordUser.CreateBulk(builders...).
+//		OnConflict(
+//			// Update the row with the new values
+//			// the was proposed for insertion.
+//			sql.ResolveWithNewValues(),
+//		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.DiscordUserUpsert) {
+//			SetUsername(v+v).
+//		}).
+//		Exec(ctx)
+func (_c *DiscordUserCreateBulk) OnConflict(opts ...sql.ConflictOption) *DiscordUserUpsertBulk {
+	_c.conflict = opts
+	return &DiscordUserUpsertBulk{
+		create: _c,
+	}
+}
+
+// OnConflictColumns calls `OnConflict` and configures the columns
+// as conflict target. Using this option is equivalent to using:
+//
+//	client.DiscordUser.Create().
+//		OnConflict(sql.ConflictColumns(columns...)).
+//		Exec(ctx)
+func (_c *DiscordUserCreateBulk) OnConflictColumns(columns ...string) *DiscordUserUpsertBulk {
+	_c.conflict = append(_c.conflict, sql.ConflictColumns(columns...))
+	return &DiscordUserUpsertBulk{
+		create: _c,
+	}
+}
+
+// DiscordUserUpsertBulk is the builder for "upsert"-ing
+// a bulk of DiscordUser nodes.
+type DiscordUserUpsertBulk struct {
+	create *DiscordUserCreateBulk
+}
+
+// UpdateNewValues updates the mutable fields using the new values that
+// were set on create. Using this option is equivalent to using:
+//
+//	client.DiscordUser.Create().
+//		OnConflict(
+//			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(discorduser.FieldID)
+//			}),
+//		).
+//		Exec(ctx)
+func (u *DiscordUserUpsertBulk) UpdateNewValues() *DiscordUserUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(discorduser.FieldID)
+			}
+		}
+	}))
+	return u
+}
+
+// Ignore sets each column to itself in case of conflict.
+// Using this option is equivalent to using:
+//
+//	client.DiscordUser.Create().
+//		OnConflict(sql.ResolveWithIgnore()).
+//		Exec(ctx)
+func (u *DiscordUserUpsertBulk) Ignore() *DiscordUserUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWithIgnore())
+	return u
+}
+
+// DoNothing configures the conflict_action to `DO NOTHING`.
+// Supported only by SQLite and PostgreSQL.
+func (u *DiscordUserUpsertBulk) DoNothing() *DiscordUserUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.DoNothing())
+	return u
+}
+
+// Update allows overriding fields `UPDATE` values. See the DiscordUserCreateBulk.OnConflict
+// documentation for more info.
+func (u *DiscordUserUpsertBulk) Update(set func(*DiscordUserUpsert)) *DiscordUserUpsertBulk {
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(update *sql.UpdateSet) {
+		set(&DiscordUserUpsert{UpdateSet: update})
+	}))
+	return u
+}
+
+// SetUsername sets the "username" field.
+func (u *DiscordUserUpsertBulk) SetUsername(v string) *DiscordUserUpsertBulk {
+	return u.Update(func(s *DiscordUserUpsert) {
+		s.SetUsername(v)
+	})
+}
+
+// UpdateUsername sets the "username" field to the value that was provided on create.
+func (u *DiscordUserUpsertBulk) UpdateUsername() *DiscordUserUpsertBulk {
+	return u.Update(func(s *DiscordUserUpsert) {
+		s.UpdateUsername()
+	})
+}
+
+// SetGlobalName sets the "global_name" field.
+func (u *DiscordUserUpsertBulk) SetGlobalName(v string) *DiscordUserUpsertBulk {
+	return u.Update(func(s *DiscordUserUpsert) {
+		s.SetGlobalName(v)
+	})
+}
+
+// UpdateGlobalName sets the "global_name" field to the value that was provided on create.
+func (u *DiscordUserUpsertBulk) UpdateGlobalName() *DiscordUserUpsertBulk {
+	return u.Update(func(s *DiscordUserUpsert) {
+		s.UpdateGlobalName()
+	})
+}
+
+// Exec executes the query.
+func (u *DiscordUserUpsertBulk) Exec(ctx context.Context) error {
+	if u.create.err != nil {
+		return u.create.err
+	}
+	for i, b := range u.create.builders {
+		if len(b.conflict) != 0 {
+			return fmt.Errorf("ent: OnConflict was set for builder %d. Set it on the DiscordUserCreateBulk instead", i)
+		}
+	}
+	if len(u.create.conflict) == 0 {
+		return errors.New("ent: missing options for DiscordUserCreateBulk.OnConflict")
+	}
+	return u.create.Exec(ctx)
+}
+
+// ExecX is like Exec, but panics if an error occurs.
+func (u *DiscordUserUpsertBulk) ExecX(ctx context.Context) {
+	if err := u.create.Exec(ctx); err != nil {
 		panic(err)
 	}
 }

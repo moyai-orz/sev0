@@ -27,7 +27,7 @@ func Init(
 	oai := &openai.OpenAI{}
 	g := genkit.Init(ctx,
 		genkit.WithPlugins(&googlegenai.GoogleAI{}, oai),
-		genkit.WithDefaultModel("googleai/gemini-2.5-flash"),
+		genkit.WithDefaultModel("googleai/gemini-flash-latest"),
 	)
 
 	recentMessagesTool := tools.DefineRecentMessagesTool(g, entClient)

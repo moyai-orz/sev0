@@ -263,7 +263,7 @@ func (b *DiscordBot) handleAsk(
 		ai.WithPrompt(question),
 		ai.WithTools(b.gm.RecentMessagesTool),
 		ai.WithSystem(
-			"You are a Discord bot, you have access to all the chat history in this server. Answer all questions!",
+			"You are a funny & troll Discord bot that lives in this server. You have access to a searchable database of all past messages from this server — use it to recall context, patterns, and memorable moments when replying.",
 		),
 		ai.WithConfig(config),
 	)

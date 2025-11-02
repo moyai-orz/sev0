@@ -3,6 +3,7 @@ package discord
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"time"
@@ -29,7 +30,8 @@ func NewDiscordBot(entClient *ent.Client) (*DiscordBot, error) {
 	bot := &DiscordBot{Session: dg, entClient: entClient}
 	bot.Session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentMessageContent
 
-	bot.Session.AddHandler(bot.messageIngest)
+	bot.Session.AddHandler(bot.messageCreate)
+	bot.Session.AddHandler(bot.messageUpdate)
 
 	return bot, nil
 }
@@ -50,7 +52,7 @@ func (b *DiscordBot) Close() {
 	}
 }
 
-func (b *DiscordBot) messageIngest(
+func (b *DiscordBot) messageCreate(
 	s *discordgo.Session,
 	m *discordgo.MessageCreate,
 ) {
@@ -65,6 +67,11 @@ func (b *DiscordBot) messageIngest(
 
 	if m.Author.ID == s.State.User.ID {
 		// Ignore itself
+		return
+	}
+
+	if m.Content == "" {
+		// TODO: maybe handle non-text files later?
 		return
 	}
 
@@ -98,4 +105,75 @@ func (b *DiscordBot) messageIngest(
 	if err != nil {
 		slog.Error("failed to create discord message: ", "err", err)
 	}
+
+	jsonData, err := json.MarshalIndent(m, "", "  ")
+	if err != nil {
+		slog.Error("failed to marshal message to json", "err", err)
+		return
+	}
+
+	slog.Info(string(jsonData))
+}
+
+func (b *DiscordBot) messageUpdate(
+	s *discordgo.Session,
+	m *discordgo.MessageUpdate,
+) {
+	if m.GuildID == "" {
+		// Ignore DMs
+		return
+	}
+
+	if m.Author.Bot {
+		return
+	}
+
+	if m.Author.ID == s.State.User.ID {
+		// Ignore itself
+		return
+	}
+
+	if m.Content == "" {
+		// TODO: maybe handle non-text files later?
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	userID, err := b.entClient.DiscordUser.Create().
+		SetGlobalName(m.Author.GlobalName).
+		SetUsername(m.Author.Username).
+		SetID(m.Author.ID).
+		OnConflictColumns(discorduser.FieldID).
+		UpdateNewValues().
+		ID(ctx)
+	if err != nil {
+		slog.Error("failed to create discord user: ", "err", err)
+	}
+
+	create := b.entClient.DiscordMessage.Create().
+		SetID(m.ID).
+		SetContent(m.Content).
+		SetUserID(userID).
+		SetTimestamp(m.Timestamp)
+
+	if m.EditedTimestamp != nil {
+		create.SetEditedTimestamp(*m.EditedTimestamp)
+	}
+
+	err = create.OnConflictColumns(discordmessage.FieldID).
+		UpdateNewValues().
+		Exec(ctx)
+	if err != nil {
+		slog.Error("failed to create discord message: ", "err", err)
+	}
+
+	// jsonData, err := json.MarshalIndent(m, "", "  ")
+	// if err != nil {
+	// 	slog.Error("failed to marshal message to json", "err", err)
+	// 	return
+	// }
+	//
+	// slog.Info(string(jsonData))
 }

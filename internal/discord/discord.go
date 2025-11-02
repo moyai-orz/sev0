@@ -238,6 +238,9 @@ func (b *DiscordBot) handleAsk(
 		b.gm.G,
 		ai.WithPrompt(question),
 		ai.WithTools(b.gm.RecentMessagesTool),
+		ai.WithSystem(
+			"You are a Discord bot, you have access to the chat history and people will ask you questions",
+		),
 	)
 	if err != nil {
 		slog.Error("failed to respond to interaction", "err", err)

@@ -219,7 +219,10 @@ func (b *DiscordBot) handleAsk(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		10*time.Second,
+	)
 	defer cancel()
 
 	options := i.ApplicationCommandData().Options
@@ -233,6 +236,27 @@ func (b *DiscordBot) handleAsk(
 
 	slog.Info(question)
 
+	config := map[string]any{
+		"safetySettings": []map[string]any{
+			{
+				"category":  "HARM_CATEGORY_HARASSMENT",
+				"threshold": "BLOCK_NONE",
+			},
+			{
+				"category":  "HARM_CATEGORY_HATE_SPEECH",
+				"threshold": "BLOCK_NONE",
+			},
+			{
+				"category":  "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+				"threshold": "BLOCK_NONE",
+			},
+			{
+				"category":  "HARM_CATEGORY_DANGEROUS_CONTENT",
+				"threshold": "BLOCK_NONE",
+			},
+		},
+	}
+
 	resp, err := genkit.GenerateText(
 		ctx,
 		b.gm.G,
@@ -241,10 +265,21 @@ func (b *DiscordBot) handleAsk(
 		ai.WithSystem(
 			"You are a Discord bot, you have access to the chat history and people will ask you questions",
 		),
+		ai.WithConfig(config),
 	)
 	if err != nil {
-		slog.Error("failed to respond to interaction", "err", err)
+		slog.Error("failed to generate text", "err", err)
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "I'm sorry, I encountered an error and couldn't process your question.",
+			},
+		})
 		return
+	}
+
+	if resp == "" {
+		resp = "The model chose not to provide a response."
 	}
 
 	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

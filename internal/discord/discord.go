@@ -80,16 +80,14 @@ func (b *DiscordBot) Start() error {
 
 	slog.Info("Checking for commands to unregister...")
 	for _, v := range registeredCommands {
-		if !localCommands[v.Name] {
-			slog.Info("Unregistering command", "name", v.Name, "id", v.ID)
-			err := b.session.ApplicationCommandDelete(
-				b.session.State.User.ID,
-				guildID,
-				v.ID,
-			)
-			if err != nil {
-				slog.Error("Cannot delete command", "name", v.Name, "err", err)
-			}
+		slog.Info("Unregistering command", "name", v.Name, "id", v.ID)
+		err := b.session.ApplicationCommandDelete(
+			b.session.State.User.ID,
+			guildID,
+			v.ID,
+		)
+		if err != nil {
+			slog.Error("Cannot delete command", "name", v.Name, "err", err)
 		}
 	}
 

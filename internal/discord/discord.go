@@ -217,10 +217,15 @@ func (b *DiscordBot) handleAsk(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) {
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
-		10*time.Second,
-	)
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+	})
+	if err != nil {
+		slog.Error("failed to defer interaction", "err", err)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	options := i.ApplicationCommandData().Options
@@ -232,7 +237,25 @@ func (b *DiscordBot) handleAsk(
 		}
 	}
 
-	slog.Info(question)
+	slog.Info("Handling ask command", "question", question)
+
+	config := map[string]any{
+		"safetySettings": []map[string]any{
+			{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+			{
+				"category":  "HARM_CATEGORY_HATE_SPEECH",
+				"threshold": "BLOCK_NONE",
+			},
+			{
+				"category":  "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+				"threshold": "BLOCK_NONE",
+			},
+			{
+				"category":  "HARM_CATEGORY_DANGEROUS_CONTENT",
+				"threshold": "BLOCK_NONE",
+			},
+		},
+	}
 
 	resp, err := genkit.GenerateText(
 		ctx,
@@ -242,33 +265,23 @@ func (b *DiscordBot) handleAsk(
 		ai.WithSystem(
 			"You are a Discord bot, you have access to the chat history and people will ask you questions.",
 		),
+		ai.WithConfig(config),
 	)
+
+	var content string
 	if err != nil {
 		slog.Error("failed to generate text", "err", err)
-		s.InteractionRespond(
-			i.Interaction,
-			&discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "I'm sorry, I encountered an error and couldn't process your question.",
-				},
-			},
-		)
-		return
+		content = "I'm sorry, I encountered an error and couldn't process your question."
+	} else if resp == "" {
+		content = "The model chose not to provide a response."
+	} else {
+		content = resp
 	}
 
-	if resp == "" {
-		resp = "The model chose not to provide a response."
-	}
-
-	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: resp,
-		},
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Content: &content,
 	})
 	if err != nil {
-		slog.Error("failed to respond to interaction", "err", err)
-		return
+		slog.Error("failed to edit interaction response", "err", err)
 	}
 }

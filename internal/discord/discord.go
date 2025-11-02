@@ -52,6 +52,10 @@ func (b *DiscordBot) messageIngest(
 		return
 	}
 
+	if m.Author.Bot {
+		return
+	}
+
 	if m.Author.ID == s.State.User.ID {
 		// Ignore itself
 		return

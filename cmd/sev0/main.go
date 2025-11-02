@@ -83,7 +83,7 @@ func main() {
 		return
 	}
 
-	bot, err := discord.NewDiscordBot(entClient, embedder, gm, phc)
+	bot, err := discord.NewDiscordBot(entClient, embedder, gm, phc, logger)
 	if err != nil {
 		logger.Error("failed to create discord bot", "err", err)
 		return

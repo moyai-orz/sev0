@@ -48,6 +48,14 @@ func (_c *DiscordMessageCreate) SetEditedTimestamp(v time.Time) *DiscordMessageC
 	return _c
 }
 
+// SetNillableEditedTimestamp sets the "edited_timestamp" field if the given value is not nil.
+func (_c *DiscordMessageCreate) SetNillableEditedTimestamp(v *time.Time) *DiscordMessageCreate {
+	if v != nil {
+		_c.SetEditedTimestamp(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *DiscordMessageCreate) SetID(v string) *DiscordMessageCreate {
 	_c.mutation.SetID(v)
@@ -112,9 +120,6 @@ func (_c *DiscordMessageCreate) check() error {
 	}
 	if _, ok := _c.mutation.Timestamp(); !ok {
 		return &ValidationError{Name: "timestamp", err: errors.New(`ent: missing required field "DiscordMessage.timestamp"`)}
-	}
-	if _, ok := _c.mutation.EditedTimestamp(); !ok {
-		return &ValidationError{Name: "edited_timestamp", err: errors.New(`ent: missing required field "DiscordMessage.edited_timestamp"`)}
 	}
 	if v, ok := _c.mutation.ID(); ok {
 		if err := discordmessage.IDValidator(v); err != nil {
@@ -265,6 +270,12 @@ func (u *DiscordMessageUpsert) UpdateEditedTimestamp() *DiscordMessageUpsert {
 	return u
 }
 
+// ClearEditedTimestamp clears the value of the "edited_timestamp" field.
+func (u *DiscordMessageUpsert) ClearEditedTimestamp() *DiscordMessageUpsert {
+	u.SetNull(discordmessage.FieldEditedTimestamp)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -344,6 +355,13 @@ func (u *DiscordMessageUpsertOne) SetEditedTimestamp(v time.Time) *DiscordMessag
 func (u *DiscordMessageUpsertOne) UpdateEditedTimestamp() *DiscordMessageUpsertOne {
 	return u.Update(func(s *DiscordMessageUpsert) {
 		s.UpdateEditedTimestamp()
+	})
+}
+
+// ClearEditedTimestamp clears the value of the "edited_timestamp" field.
+func (u *DiscordMessageUpsertOne) ClearEditedTimestamp() *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.ClearEditedTimestamp()
 	})
 }
 
@@ -592,6 +610,13 @@ func (u *DiscordMessageUpsertBulk) SetEditedTimestamp(v time.Time) *DiscordMessa
 func (u *DiscordMessageUpsertBulk) UpdateEditedTimestamp() *DiscordMessageUpsertBulk {
 	return u.Update(func(s *DiscordMessageUpsert) {
 		s.UpdateEditedTimestamp()
+	})
+}
+
+// ClearEditedTimestamp clears the value of the "edited_timestamp" field.
+func (u *DiscordMessageUpsertBulk) ClearEditedTimestamp() *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.ClearEditedTimestamp()
 	})
 }
 

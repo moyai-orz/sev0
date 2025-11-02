@@ -13,7 +13,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
 		{Name: "timestamp", Type: field.TypeTime},
-		{Name: "edited_timestamp", Type: field.TypeTime},
+		{Name: "edited_timestamp", Type: field.TypeTime, Nullable: true},
 		{Name: "author_id", Type: field.TypeString},
 	}
 	// DiscordMessagesTable holds the schema information for the "discord_messages" table.

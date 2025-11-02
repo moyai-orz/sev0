@@ -56,6 +56,12 @@ func (_u *DiscordMessageUpdate) SetNillableEditedTimestamp(v *time.Time) *Discor
 	return _u
 }
 
+// ClearEditedTimestamp clears the value of the "edited_timestamp" field.
+func (_u *DiscordMessageUpdate) ClearEditedTimestamp() *DiscordMessageUpdate {
+	_u.mutation.ClearEditedTimestamp()
+	return _u
+}
+
 // Mutation returns the DiscordMessageMutation object of the builder.
 func (_u *DiscordMessageUpdate) Mutation() *DiscordMessageMutation {
 	return _u.mutation
@@ -114,6 +120,9 @@ func (_u *DiscordMessageUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if value, ok := _u.mutation.EditedTimestamp(); ok {
 		_spec.SetField(discordmessage.FieldEditedTimestamp, field.TypeTime, value)
 	}
+	if _u.mutation.EditedTimestampCleared() {
+		_spec.ClearField(discordmessage.FieldEditedTimestamp, field.TypeTime)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{discordmessage.Label}
@@ -159,6 +168,12 @@ func (_u *DiscordMessageUpdateOne) SetNillableEditedTimestamp(v *time.Time) *Dis
 	if v != nil {
 		_u.SetEditedTimestamp(*v)
 	}
+	return _u
+}
+
+// ClearEditedTimestamp clears the value of the "edited_timestamp" field.
+func (_u *DiscordMessageUpdateOne) ClearEditedTimestamp() *DiscordMessageUpdateOne {
+	_u.mutation.ClearEditedTimestamp()
 	return _u
 }
 
@@ -249,6 +264,9 @@ func (_u *DiscordMessageUpdateOne) sqlSave(ctx context.Context) (_node *DiscordM
 	}
 	if value, ok := _u.mutation.EditedTimestamp(); ok {
 		_spec.SetField(discordmessage.FieldEditedTimestamp, field.TypeTime, value)
+	}
+	if _u.mutation.EditedTimestampCleared() {
+		_spec.ClearField(discordmessage.FieldEditedTimestamp, field.TypeTime)
 	}
 	_node = &DiscordMessage{config: _u.config}
 	_spec.Assign = _node.assignValues

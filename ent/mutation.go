@@ -289,9 +289,22 @@ func (m *DiscordMessageMutation) OldEditedTimestamp(ctx context.Context) (v time
 	return oldValue.EditedTimestamp, nil
 }
 
+// ClearEditedTimestamp clears the value of the "edited_timestamp" field.
+func (m *DiscordMessageMutation) ClearEditedTimestamp() {
+	m.edited_timestamp = nil
+	m.clearedFields[discordmessage.FieldEditedTimestamp] = struct{}{}
+}
+
+// EditedTimestampCleared returns if the "edited_timestamp" field was cleared in this mutation.
+func (m *DiscordMessageMutation) EditedTimestampCleared() bool {
+	_, ok := m.clearedFields[discordmessage.FieldEditedTimestamp]
+	return ok
+}
+
 // ResetEditedTimestamp resets all changes to the "edited_timestamp" field.
 func (m *DiscordMessageMutation) ResetEditedTimestamp() {
 	m.edited_timestamp = nil
+	delete(m.clearedFields, discordmessage.FieldEditedTimestamp)
 }
 
 // SetUserID sets the "user" edge to the DiscordUser entity by id.
@@ -480,7 +493,11 @@ func (m *DiscordMessageMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *DiscordMessageMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(discordmessage.FieldEditedTimestamp) {
+		fields = append(fields, discordmessage.FieldEditedTimestamp)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -493,6 +510,11 @@ func (m *DiscordMessageMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *DiscordMessageMutation) ClearField(name string) error {
+	switch name {
+	case discordmessage.FieldEditedTimestamp:
+		m.ClearEditedTimestamp()
+		return nil
+	}
 	return fmt.Errorf("unknown DiscordMessage nullable field %s", name)
 }
 

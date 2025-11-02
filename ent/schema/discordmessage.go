@@ -18,7 +18,7 @@ func (DiscordMessage) Fields() []ent.Field {
 		field.Text("content"),
 		field.String("author_id").NotEmpty().Immutable(),
 		field.Time("timestamp").Immutable(),
-		field.Time("edited_timestamp"),
+		field.Time("edited_timestamp").Optional(),
 	}
 }
 

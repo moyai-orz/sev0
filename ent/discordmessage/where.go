@@ -295,6 +295,16 @@ func EditedTimestampLTE(v time.Time) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.FieldLTE(FieldEditedTimestamp, v))
 }
 
+// EditedTimestampIsNil applies the IsNil predicate on the "edited_timestamp" field.
+func EditedTimestampIsNil() predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldIsNull(FieldEditedTimestamp))
+}
+
+// EditedTimestampNotNil applies the NotNil predicate on the "edited_timestamp" field.
+func EditedTimestampNotNil() predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNotNull(FieldEditedTimestamp))
+}
+
 // HasUser applies the HasEdge predicate on the "user" edge.
 func HasUser() predicate.DiscordMessage {
 	return predicate.DiscordMessage(func(s *sql.Selector) {

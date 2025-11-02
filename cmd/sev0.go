@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"database/sql"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,6 +11,9 @@ import (
 	"sev0/ent"
 	"sev0/internal/discord"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 )
 
@@ -20,17 +23,19 @@ func main() {
 		slog.Error("failed loading *.env file")
 	}
 
-	entClient, err := ent.Open(
-		"postgres",
-		os.Getenv("DATABASE_URL"),
-	)
+	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatalf("failed opening connection to postgres: %v", err)
+		slog.Error("unable to connect to db", "err", err)
+		return
 	}
-	defer entClient.Close()
+	drv := entsql.OpenDB(dialect.Postgres, db)
+
+	entClient := ent.NewClient(ent.Driver(drv))
+
 	// Run the auto migration tool.
 	if err := entClient.Schema.Create(context.Background()); err != nil {
-		log.Fatalf("failed creating schema resources: %v", err)
+		slog.Error("failed creating schema resources", "err", err)
+		return
 	}
 
 	bot, err := discord.NewDiscordBot(entClient)

@@ -11,7 +11,6 @@ require (
 	github.com/pgvector/pgvector-go v0.3.0
 	github.com/posthog/posthog-go v1.6.12
 	github.com/samber/lo v1.52.0
-	gorm.io/gorm v1.25.5
 )
 
 require (

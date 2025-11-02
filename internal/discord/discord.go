@@ -3,8 +3,6 @@ package discord
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -12,21 +10,25 @@ import (
 	"sev0/ent"
 	"sev0/ent/discordmessage"
 	"sev0/ent/discorduser"
+	"sev0/internal/genkitmagic"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/firebase/genkit/go/ai"
+	"github.com/firebase/genkit/go/genkit"
 )
 
 type DiscordBot struct {
 	session         *discordgo.Session
 	entClient       *ent.Client
 	embedder        ai.Embedder
+	gm              genkitmagic.GenkitMagic
 	commandHandlers map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate)
 }
 
 func NewDiscordBot(
 	entClient *ent.Client,
 	embedder ai.Embedder,
+	genkitMagic genkitmagic.GenkitMagic,
 ) (*DiscordBot, error) {
 	dg, err := discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 	if err != nil {
@@ -34,7 +36,12 @@ func NewDiscordBot(
 		return nil, err
 	}
 
-	bot := &DiscordBot{session: dg, entClient: entClient, embedder: embedder}
+	bot := &DiscordBot{
+		session:   dg,
+		entClient: entClient,
+		embedder:  embedder,
+		gm:        genkitMagic,
+	}
 
 	bot.commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"ask": bot.handleAsk,
@@ -175,13 +182,13 @@ func (b *DiscordBot) messageCreateOrUpdate(
 		slog.Error("failed to create discord message: ", "err", err)
 	}
 
-	jsonData, err := json.MarshalIndent(m, "", "  ")
-	if err != nil {
-		slog.Error("failed to marshal message to json", "err", err)
-		return
-	}
-
-	slog.Info(string(jsonData))
+	// jsonData, err := json.MarshalIndent(m, "", "  ")
+	// if err != nil {
+	// 	slog.Error("failed to marshal message to json", "err", err)
+	// 	return
+	// }
+	//
+	// slog.Info(string(jsonData))
 }
 
 var commands = []*discordgo.ApplicationCommand{
@@ -212,6 +219,9 @@ func (b *DiscordBot) handleAsk(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	options := i.ApplicationCommandData().Options
 	var question string
 	for _, opt := range options {
@@ -221,10 +231,23 @@ func (b *DiscordBot) handleAsk(
 		}
 	}
 
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	slog.Info(question)
+
+	resp, err := genkit.GenerateText(
+		ctx,
+		b.gm.G,
+		ai.WithPrompt(question),
+		ai.WithTools(b.gm.RecentMessagesTool),
+	)
+	if err != nil {
+		slog.Error("failed to respond to interaction", "err", err)
+		return
+	}
+
+	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("You asked: \"%s\"", question),
+			Content: resp,
 		},
 	})
 	if err != nil {

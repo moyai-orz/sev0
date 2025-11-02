@@ -12,13 +12,10 @@ import (
 
 	"sev0/ent"
 	"sev0/internal/discord"
+	"sev0/internal/genkitmagic"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/firebase/genkit/go/genkit"
-	compat_oai "github.com/firebase/genkit/go/plugins/compat_oai/openai"
-
-	"github.com/firebase/genkit/go/plugins/googlegenai"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 )
@@ -30,15 +27,6 @@ func main() {
 	if err != nil {
 		slog.Error("failed loading *.env file")
 	}
-
-	oai := &compat_oai.OpenAI{}
-
-	g := genkit.Init(ctx,
-		genkit.WithPlugins(&googlegenai.GoogleAI{}, oai),
-		genkit.WithDefaultModel("googleai/gemini-2.5-flash"),
-	)
-
-	embedder := oai.Embedder(g, "text-embedding-3-small")
 
 	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
 	if err != nil {
@@ -52,8 +40,15 @@ func main() {
 		return
 	}
 	drv := entsql.OpenDB(dialect.Postgres, db)
-
 	entClient := ent.NewClient(ent.Driver(drv))
+
+	gm, err := genkitmagic.Init(ctx, entClient)
+	if err != nil {
+		slog.Error("failed to initialize genkit", "err", err)
+		return
+	}
+
+	embedder := gm.OAI.Embedder(gm.G, "text-embedding-3-small")
 
 	// Run the auto migration tool.
 	if err := entClient.Schema.Create(context.Background()); err != nil {
@@ -61,7 +56,7 @@ func main() {
 		return
 	}
 
-	bot, err := discord.NewDiscordBot(entClient, embedder)
+	bot, err := discord.NewDiscordBot(entClient, embedder, gm)
 	if err != nil {
 		slog.Error("failed to create discord bot", "err", err)
 		return

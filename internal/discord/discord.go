@@ -55,11 +55,42 @@ func (b *DiscordBot) Start() error {
 		return err
 	}
 
+	guildID := os.Getenv("DISCORD_GUILD_ID")
+
+	registeredCommands, err := b.session.ApplicationCommands(
+		b.session.State.User.ID,
+		guildID,
+	)
+	if err != nil {
+		slog.Error("Could not fetch registered commands", "err", err)
+		return err
+	}
+
+	localCommands := make(map[string]bool)
+	for _, v := range commands {
+		localCommands[v.Name] = true
+	}
+
+	slog.Info("Checking for commands to unregister...")
+	for _, v := range registeredCommands {
+		if !localCommands[v.Name] {
+			slog.Info("Unregistering command", "name", v.Name, "id", v.ID)
+			err := b.session.ApplicationCommandDelete(
+				b.session.State.User.ID,
+				guildID,
+				v.ID,
+			)
+			if err != nil {
+				slog.Error("Cannot delete command", "name", v.Name, "err", err)
+			}
+		}
+	}
+
 	slog.Info("Registering commands")
 	for _, v := range commands {
 		_, err := b.session.ApplicationCommandCreate(
 			b.session.State.User.ID,
-			os.Getenv("DISCORD_GUILD_ID"),
+			guildID,
 			v,
 		)
 		if err != nil {

@@ -30,8 +30,8 @@ func DefineRecentMessagesTool(
 ) ai.Tool {
 	return genkit.DefineTool(
 		g,
-		"recentMessages",
-		"Get the recent messages, it also includes author's name and message timestamp",
+		"recent_messages",
+		"Retrieve recent Discord messages from the server’s message database to give the chatbot real context, continuity, and humor based on prior conversations.",
 		func(ctx *ai.ToolContext, input RecentMessagesInput) (*RecentMessagesOutput, error) {
 			messages, err := entClient.DiscordMessage.Query().
 				Order(discordmessage.ByTimestamp(sql.OrderDesc())).

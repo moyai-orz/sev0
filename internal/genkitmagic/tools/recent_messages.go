@@ -1,8 +1,6 @@
 package tools
 
 import (
-	"time"
-
 	"sev0/ent"
 	"sev0/ent/discordmessage"
 
@@ -21,9 +19,9 @@ type RecentMessagesOutput struct {
 }
 
 type Message struct {
-	Content   string    `json:"content"`
-	Author    string    `json:"author"`
-	Timestamp time.Time `json:"timestamp"`
+	Content string `json:"content"`
+	Author  string `json:"author"`
+	// Timestamp time.Time `json:"timestamp"`
 }
 
 func DefineRecentMessagesTool(
@@ -46,9 +44,9 @@ func DefineRecentMessagesTool(
 				messages,
 				(func(item *ent.DiscordMessage, index int) Message {
 					return Message{
-						Content:   item.Content,
-						Author:    item.Edges.User.GlobalName,
-						Timestamp: item.Timestamp,
+						Content: item.Content,
+						Author:  item.Edges.User.GlobalName,
+						// Timestamp: item.Timestamp,
 					}
 				}))
 

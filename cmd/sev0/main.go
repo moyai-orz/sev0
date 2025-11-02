@@ -18,6 +18,7 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
+	"github.com/posthog/posthog-go"
 )
 
 func main() {
@@ -27,6 +28,12 @@ func main() {
 	if err != nil {
 		slog.Error("failed loading *.env file")
 	}
+
+	phc, _ := posthog.NewWithConfig(
+		os.Getenv("POSTHOG_KEY"),
+		posthog.Config{Endpoint: "https://us.i.posthog.com"},
+	)
+	defer phc.Close()
 
 	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
 	if err != nil {
@@ -56,7 +63,7 @@ func main() {
 		return
 	}
 
-	bot, err := discord.NewDiscordBot(entClient, embedder, gm)
+	bot, err := discord.NewDiscordBot(entClient, embedder, gm, phc)
 	if err != nil {
 		slog.Error("failed to create discord bot", "err", err)
 		return

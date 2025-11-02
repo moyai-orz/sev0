@@ -15,6 +15,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/firebase/genkit/go/ai"
 	"github.com/firebase/genkit/go/genkit"
+	"github.com/posthog/posthog-go"
 )
 
 type DiscordBot struct {
@@ -22,6 +23,7 @@ type DiscordBot struct {
 	entClient       *ent.Client
 	embedder        ai.Embedder
 	gm              genkitmagic.GenkitMagic
+	phc             posthog.Client
 	commandHandlers map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate)
 }
 
@@ -29,6 +31,7 @@ func NewDiscordBot(
 	entClient *ent.Client,
 	embedder ai.Embedder,
 	genkitMagic genkitmagic.GenkitMagic,
+	phc posthog.Client,
 ) (*DiscordBot, error) {
 	dg, err := discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 	if err != nil {
@@ -41,6 +44,7 @@ func NewDiscordBot(
 		entClient: entClient,
 		embedder:  embedder,
 		gm:        genkitMagic,
+		phc:       phc,
 	}
 
 	bot.commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -217,6 +221,11 @@ func (b *DiscordBot) handleAsk(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) {
+	b.phc.Enqueue(posthog.Capture{
+		DistinctId: i.Member.User.ID,
+		Event:      "ask",
+	})
+
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 	})

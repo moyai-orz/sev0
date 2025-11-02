@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"sev0/ent"
+	"sev0/internal/contextkeys"
 	"sev0/internal/discord"
 	"sev0/internal/genkitmagic"
 
@@ -35,15 +36,34 @@ func main() {
 	)
 	defer phc.Close()
 
+	baseLogHandler := slog.NewTextHandler(
+		os.Stdout,
+		&slog.HandlerOptions{Level: slog.LevelInfo},
+	)
+	logger := slog.New(posthog.NewSlogCaptureHandler(
+		baseLogHandler,
+		phc,
+		posthog.WithMinCaptureLevel(slog.LevelWarn),
+		posthog.WithDistinctIDFn(
+			func(ctx context.Context, r slog.Record) string {
+				if userID, ok := ctx.Value(contextkeys.UserIDKey).(string); ok {
+					return userID
+				}
+				// Fallback if no user ID is in the context
+				return "anonymous"
+			},
+		),
+	))
+
 	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		slog.Error("unable to connect to db", "err", err)
+		logger.Error("unable to connect to db", "err", err)
 		return
 	}
 
 	// Enable pgvector extension
 	if _, err := db.ExecContext(ctx, "CREATE EXTENSION IF NOT EXISTS vector;"); err != nil {
-		slog.Error("failed to enable pgvector extension", "err", err)
+		logger.Error("failed to enable pgvector extension", "err", err)
 		return
 	}
 	drv := entsql.OpenDB(dialect.Postgres, db)
@@ -51,7 +71,7 @@ func main() {
 
 	gm, err := genkitmagic.Init(ctx, entClient)
 	if err != nil {
-		slog.Error("failed to initialize genkit", "err", err)
+		logger.Error("failed to initialize genkit", "err", err)
 		return
 	}
 
@@ -59,31 +79,31 @@ func main() {
 
 	// Run the auto migration tool.
 	if err := entClient.Schema.Create(context.Background()); err != nil {
-		slog.Error("failed creating schema resources", "err", err)
+		logger.Error("failed creating schema resources", "err", err)
 		return
 	}
 
 	bot, err := discord.NewDiscordBot(entClient, embedder, gm, phc)
 	if err != nil {
-		slog.Error("failed to create discord bot", "err", err)
+		logger.Error("failed to create discord bot", "err", err)
 		return
 	}
 
-	go startHTTPServer()
+	go startHTTPServer(logger)
 
 	if err := bot.Start(); err != nil {
-		slog.Error("failed to start discord bot", "err", err)
+		logger.Error("failed to start discord bot", "err", err)
 		return
 	}
 	defer bot.Close()
 
-	slog.Info("Bot is now running. Press CTRL-C to exit.")
+	logger.Info("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 }
 
-func startHTTPServer() {
+func startHTTPServer(logger *slog.Logger) {
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "OK")
 	})
@@ -93,8 +113,8 @@ func startHTTPServer() {
 		port = "8080"
 	}
 
-	slog.Info("starting http server", "port", port)
+	logger.Info("starting http server", "port", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		slog.Error("failed to start http server", "err", err)
+		logger.Error("failed to start http server", "err", err)
 	}
 }

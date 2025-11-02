@@ -10,6 +10,7 @@ import (
 	"sev0/ent"
 	"sev0/ent/discordmessage"
 	"sev0/ent/discorduser"
+	"sev0/internal/contextkeys"
 	"sev0/internal/genkitmagic"
 
 	"github.com/bwmarrin/discordgo"
@@ -24,7 +25,8 @@ type DiscordBot struct {
 	embedder        ai.Embedder
 	gm              genkitmagic.GenkitMagic
 	phc             posthog.Client
-	commandHandlers map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate)
+	logger          *slog.Logger
+	commandHandlers map[string]func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate)
 }
 
 func NewDiscordBot(
@@ -32,10 +34,11 @@ func NewDiscordBot(
 	embedder ai.Embedder,
 	genkitMagic genkitmagic.GenkitMagic,
 	phc posthog.Client,
+	logger *slog.Logger,
 ) (*DiscordBot, error) {
 	dg, err := discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 	if err != nil {
-		slog.Error("Failed initializing discordgo", "err", err)
+		logger.Error("Failed initializing discordgo", "err", err)
 		return nil, err
 	}
 
@@ -45,9 +48,10 @@ func NewDiscordBot(
 		embedder:  embedder,
 		gm:        genkitMagic,
 		phc:       phc,
+		logger:    logger,
 	}
 
-	bot.commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+	bot.commandHandlers = map[string]func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate){
 		"ask": bot.handleAsk,
 	}
 	bot.session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentMessageContent
@@ -62,7 +66,7 @@ func NewDiscordBot(
 func (b *DiscordBot) Start() error {
 	err := b.session.Open()
 	if err != nil {
-		slog.Error("error opening connection", "err", err)
+		b.logger.Error("error opening connection", "err", err)
 		return err
 	}
 
@@ -73,7 +77,7 @@ func (b *DiscordBot) Start() error {
 		guildID,
 	)
 	if err != nil {
-		slog.Error("Could not fetch registered commands", "err", err)
+		b.logger.Error("Could not fetch registered commands", "err", err)
 		return err
 	}
 
@@ -82,20 +86,20 @@ func (b *DiscordBot) Start() error {
 		localCommands[v.Name] = true
 	}
 
-	slog.Info("Checking for commands to unregister...")
+	b.logger.Info("Checking for commands to unregister...")
 	for _, v := range registeredCommands {
-		slog.Info("Unregistering command", "name", v.Name, "id", v.ID)
+		b.logger.Info("Unregistering command", "name", v.Name, "id", v.ID)
 		err := b.session.ApplicationCommandDelete(
 			b.session.State.User.ID,
 			guildID,
 			v.ID,
 		)
 		if err != nil {
-			slog.Error("Cannot delete command", "name", v.Name, "err", err)
+			b.logger.Error("Cannot delete command", "name", v.Name, "err", err)
 		}
 	}
 
-	slog.Info("Registering commands")
+	b.logger.Info("Registering commands")
 	for _, v := range commands {
 		_, err := b.session.ApplicationCommandCreate(
 			b.session.State.User.ID,
@@ -103,7 +107,13 @@ func (b *DiscordBot) Start() error {
 			v,
 		)
 		if err != nil {
-			slog.Error("Cannot create command", "command", v.Name, "err", err)
+			b.logger.Error(
+				"Cannot create command",
+				"command",
+				v.Name,
+				"err",
+				err,
+			)
 		}
 	}
 
@@ -112,7 +122,7 @@ func (b *DiscordBot) Start() error {
 
 func (b *DiscordBot) Close() {
 	if err := b.session.Close(); err != nil {
-		slog.Error("error closing discord session", "err", err)
+		b.logger.Error("error closing discord session", "err", err)
 	}
 }
 
@@ -164,7 +174,7 @@ func (b *DiscordBot) messageCreateOrUpdate(
 		UpdateNewValues().
 		ID(ctx)
 	if err != nil {
-		slog.Error("failed to create discord user: ", "err", err)
+		b.logger.Error("failed to create discord user: ", "err", err)
 	}
 
 	create := b.entClient.DiscordMessage.Create().
@@ -181,16 +191,16 @@ func (b *DiscordBot) messageCreateOrUpdate(
 		UpdateNewValues().
 		Exec(ctx)
 	if err != nil {
-		slog.Error("failed to create discord message: ", "err", err)
+		b.logger.Error("failed to create discord message: ", "err", err)
 	}
 
 	// jsonData, err := json.MarshalIndent(m, "", "  ")
 	// if err != nil {
-	// 	slog.Error("failed to marshal message to json", "err", err)
+	// 	logger.Error("failed to marshal message to json", "err", err)
 	// 	return
 	// }
 	//
-	// slog.Info(string(jsonData))
+	// logger.Info(string(jsonData))
 }
 
 var commands = []*discordgo.ApplicationCommand{
@@ -212,12 +222,26 @@ func (b *DiscordBot) interactionCreate(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) {
+	// Create a context with the user ID for logging and tracing.
+	var userID string
+	if i.Member != nil {
+		userID = i.Member.User.ID
+	} else {
+		userID = i.User.ID
+	}
+	ctx := context.WithValue(
+		context.Background(),
+		contextkeys.UserIDKey,
+		userID,
+	)
+
 	if h, ok := b.commandHandlers[i.ApplicationCommandData().Name]; ok {
-		h(s, i)
+		h(ctx, s, i)
 	}
 }
 
 func (b *DiscordBot) handleAsk(
+	ctx context.Context,
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) {
@@ -232,11 +256,11 @@ func (b *DiscordBot) handleAsk(
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 	})
 	if err != nil {
-		slog.Error("failed to defer interaction", "err", err)
+		b.logger.Error("failed to defer interaction", "err", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	options := i.ApplicationCommandData().Options
@@ -248,7 +272,7 @@ func (b *DiscordBot) handleAsk(
 		}
 	}
 
-	slog.Info("Handling ask command", "question", question)
+	b.logger.Info("Handling ask command", "question", question)
 
 	config := map[string]any{
 		"safetySettings": []map[string]any{
@@ -281,7 +305,7 @@ func (b *DiscordBot) handleAsk(
 
 	var content string
 	if err != nil {
-		slog.Error("failed to generate text", "err", err)
+		b.logger.Error("failed to generate text", "err", err)
 		content = "I'm sorry, I encountered an error and couldn't process your question."
 	} else if resp == "" {
 		content = "The model chose not to provide a response."
@@ -293,6 +317,6 @@ func (b *DiscordBot) handleAsk(
 		Content: &content,
 	})
 	if err != nil {
-		slog.Error("failed to edit interaction response", "err", err)
+		b.logger.Error("failed to edit interaction response", "err", err)
 	}
 }

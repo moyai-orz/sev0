@@ -9,7 +9,9 @@ require (
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/pgvector/pgvector-go v0.3.0
+	github.com/posthog/posthog-go v1.6.12
 	github.com/samber/lo v1.52.0
+	gorm.io/gorm v1.25.5
 )
 
 require (
@@ -44,7 +46,6 @@ require (
 	github.com/mbleigh/raymond v0.0.0-20250414171441-6b3a58ab9e0a // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/openai/openai-go v1.12.0 // indirect
-	github.com/posthog/posthog-go v1.6.12 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

@@ -2,8 +2,10 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 // DiscordMessage holds the schema definition for the DiscordMessage entity.
@@ -29,5 +31,11 @@ func (DiscordMessage) Edges() []ent.Edge {
 			Ref("messages").
 			Unique().
 			Field("author_id").Required().Immutable(),
+	}
+}
+
+func (DiscordMessage) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("timestamp").Annotations(entsql.DescColumns("timestamp")),
 	}
 }

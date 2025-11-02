@@ -3,6 +3,7 @@
 package migrate
 
 import (
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/schema/field"
 )
@@ -27,6 +28,18 @@ var (
 				Columns:    []*schema.Column{DiscordMessagesColumns[4]},
 				RefColumns: []*schema.Column{DiscordUsersColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "discordmessage_timestamp",
+				Unique:  false,
+				Columns: []*schema.Column{DiscordMessagesColumns[2]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						DiscordMessagesColumns[2].Name: true,
+					},
+				},
 			},
 		},
 	}

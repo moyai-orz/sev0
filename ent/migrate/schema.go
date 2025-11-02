@@ -43,6 +43,35 @@ var (
 			},
 		},
 	}
+	// DiscordMessageEmbeddingsColumns holds the columns for the "discord_message_embeddings" table.
+	DiscordMessageEmbeddingsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "model", Type: field.TypeString},
+		{Name: "embedding", Type: field.TypeOther, SchemaType: map[string]string{"postgres": "vector"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "message_id", Type: field.TypeString},
+	}
+	// DiscordMessageEmbeddingsTable holds the schema information for the "discord_message_embeddings" table.
+	DiscordMessageEmbeddingsTable = &schema.Table{
+		Name:       "discord_message_embeddings",
+		Columns:    DiscordMessageEmbeddingsColumns,
+		PrimaryKey: []*schema.Column{DiscordMessageEmbeddingsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "discord_message_embeddings_discord_messages_embeddings",
+				Columns:    []*schema.Column{DiscordMessageEmbeddingsColumns[4]},
+				RefColumns: []*schema.Column{DiscordMessagesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "discordmessageembedding_message_id_model",
+				Unique:  true,
+				Columns: []*schema.Column{DiscordMessageEmbeddingsColumns[4], DiscordMessageEmbeddingsColumns[1]},
+			},
+		},
+	}
 	// DiscordUsersColumns holds the columns for the "discord_users" table.
 	DiscordUsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -58,10 +87,12 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		DiscordMessagesTable,
+		DiscordMessageEmbeddingsTable,
 		DiscordUsersTable,
 	}
 )
 
 func init() {
 	DiscordMessagesTable.ForeignKeys[0].RefTable = DiscordUsersTable
+	DiscordMessageEmbeddingsTable.ForeignKeys[0].RefTable = DiscordMessagesTable
 }

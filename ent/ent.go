@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 	"sev0/ent/discordmessage"
+	"sev0/ent/discordmessageembedding"
 	"sev0/ent/discorduser"
 	"sync"
 
@@ -74,8 +75,9 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			discordmessage.Table: discordmessage.ValidColumn,
-			discorduser.Table:    discorduser.ValidColumn,
+			discordmessage.Table:          discordmessage.ValidColumn,
+			discordmessageembedding.Table: discordmessageembedding.ValidColumn,
+			discorduser.Table:             discorduser.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

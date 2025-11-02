@@ -36,9 +36,11 @@ type DiscordMessage struct {
 type DiscordMessageEdges struct {
 	// User holds the value of the user edge.
 	User *DiscordUser `json:"user,omitempty"`
+	// Embeddings holds the value of the embeddings edge.
+	Embeddings []*DiscordMessageEmbedding `json:"embeddings,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -50,6 +52,15 @@ func (e DiscordMessageEdges) UserOrErr() (*DiscordUser, error) {
 		return nil, &NotFoundError{label: discorduser.Label}
 	}
 	return nil, &NotLoadedError{edge: "user"}
+}
+
+// EmbeddingsOrErr returns the Embeddings value or an error if the edge
+// was not loaded in eager-loading.
+func (e DiscordMessageEdges) EmbeddingsOrErr() ([]*DiscordMessageEmbedding, error) {
+	if e.loadedTypes[1] {
+		return e.Embeddings, nil
+	}
+	return nil, &NotLoadedError{edge: "embeddings"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -122,6 +133,11 @@ func (_m *DiscordMessage) Value(name string) (ent.Value, error) {
 // QueryUser queries the "user" edge of the DiscordMessage entity.
 func (_m *DiscordMessage) QueryUser() *DiscordUserQuery {
 	return NewDiscordMessageClient(_m.config).QueryUser(_m)
+}
+
+// QueryEmbeddings queries the "embeddings" edge of the DiscordMessage entity.
+func (_m *DiscordMessage) QueryEmbeddings() *DiscordMessageEmbeddingQuery {
+	return NewDiscordMessageClient(_m.config).QueryEmbeddings(_m)
 }
 
 // Update returns a builder for updating this DiscordMessage.

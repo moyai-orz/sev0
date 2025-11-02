@@ -328,6 +328,29 @@ func HasUserWith(preds ...predicate.DiscordUser) predicate.DiscordMessage {
 	})
 }
 
+// HasEmbeddings applies the HasEdge predicate on the "embeddings" edge.
+func HasEmbeddings() predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EmbeddingsTable, EmbeddingsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEmbeddingsWith applies the HasEdge predicate on the "embeddings" edge with a given conditions (other predicates).
+func HasEmbeddingsWith(preds ...predicate.DiscordMessageEmbedding) predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := newEmbeddingsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.DiscordMessage) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.AndPredicates(predicates...))

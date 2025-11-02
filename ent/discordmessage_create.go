@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sev0/ent/discordmessage"
+	"sev0/ent/discordmessageembedding"
 	"sev0/ent/discorduser"
 	"time"
 
@@ -71,6 +72,21 @@ func (_c *DiscordMessageCreate) SetUserID(id string) *DiscordMessageCreate {
 // SetUser sets the "user" edge to the DiscordUser entity.
 func (_c *DiscordMessageCreate) SetUser(v *DiscordUser) *DiscordMessageCreate {
 	return _c.SetUserID(v.ID)
+}
+
+// AddEmbeddingIDs adds the "embeddings" edge to the DiscordMessageEmbedding entity by IDs.
+func (_c *DiscordMessageCreate) AddEmbeddingIDs(ids ...string) *DiscordMessageCreate {
+	_c.mutation.AddEmbeddingIDs(ids...)
+	return _c
+}
+
+// AddEmbeddings adds the "embeddings" edges to the DiscordMessageEmbedding entity.
+func (_c *DiscordMessageCreate) AddEmbeddings(v ...*DiscordMessageEmbedding) *DiscordMessageCreate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEmbeddingIDs(ids...)
 }
 
 // Mutation returns the DiscordMessageMutation object of the builder.
@@ -192,6 +208,22 @@ func (_c *DiscordMessageCreate) createSpec() (*DiscordMessage, *sqlgraph.CreateS
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.AuthorID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EmbeddingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   discordmessage.EmbeddingsTable,
+			Columns: []string{discordmessage.EmbeddingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discordmessageembedding.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

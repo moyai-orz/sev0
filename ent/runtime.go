@@ -4,8 +4,10 @@ package ent
 
 import (
 	"sev0/ent/discordmessage"
+	"sev0/ent/discordmessageembedding"
 	"sev0/ent/discorduser"
 	"sev0/ent/schema"
+	"time"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -22,6 +24,24 @@ func init() {
 	discordmessageDescID := discordmessageFields[0].Descriptor()
 	// discordmessage.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	discordmessage.IDValidator = discordmessageDescID.Validators[0].(func(string) error)
+	discordmessageembeddingFields := schema.DiscordMessageEmbedding{}.Fields()
+	_ = discordmessageembeddingFields
+	// discordmessageembeddingDescMessageID is the schema descriptor for message_id field.
+	discordmessageembeddingDescMessageID := discordmessageembeddingFields[1].Descriptor()
+	// discordmessageembedding.MessageIDValidator is a validator for the "message_id" field. It is called by the builders before save.
+	discordmessageembedding.MessageIDValidator = discordmessageembeddingDescMessageID.Validators[0].(func(string) error)
+	// discordmessageembeddingDescModel is the schema descriptor for model field.
+	discordmessageembeddingDescModel := discordmessageembeddingFields[2].Descriptor()
+	// discordmessageembedding.ModelValidator is a validator for the "model" field. It is called by the builders before save.
+	discordmessageembedding.ModelValidator = discordmessageembeddingDescModel.Validators[0].(func(string) error)
+	// discordmessageembeddingDescCreatedAt is the schema descriptor for created_at field.
+	discordmessageembeddingDescCreatedAt := discordmessageembeddingFields[4].Descriptor()
+	// discordmessageembedding.DefaultCreatedAt holds the default value on creation for the created_at field.
+	discordmessageembedding.DefaultCreatedAt = discordmessageembeddingDescCreatedAt.Default.(func() time.Time)
+	// discordmessageembeddingDescID is the schema descriptor for id field.
+	discordmessageembeddingDescID := discordmessageembeddingFields[0].Descriptor()
+	// discordmessageembedding.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	discordmessageembedding.IDValidator = discordmessageembeddingDescID.Validators[0].(func(string) error)
 	discorduserFields := schema.DiscordUser{}.Fields()
 	_ = discorduserFields
 	// discorduserDescUsername is the schema descriptor for username field.

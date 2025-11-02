@@ -12,6 +12,7 @@ import (
 	"sev0/ent/migrate"
 
 	"sev0/ent/discordmessage"
+	"sev0/ent/discordmessageembedding"
 	"sev0/ent/discorduser"
 
 	"entgo.io/ent"
@@ -27,6 +28,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// DiscordMessage is the client for interacting with the DiscordMessage builders.
 	DiscordMessage *DiscordMessageClient
+	// DiscordMessageEmbedding is the client for interacting with the DiscordMessageEmbedding builders.
+	DiscordMessageEmbedding *DiscordMessageEmbeddingClient
 	// DiscordUser is the client for interacting with the DiscordUser builders.
 	DiscordUser *DiscordUserClient
 }
@@ -41,6 +44,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.DiscordMessage = NewDiscordMessageClient(c.config)
+	c.DiscordMessageEmbedding = NewDiscordMessageEmbeddingClient(c.config)
 	c.DiscordUser = NewDiscordUserClient(c.config)
 }
 
@@ -132,10 +136,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:            ctx,
-		config:         cfg,
-		DiscordMessage: NewDiscordMessageClient(cfg),
-		DiscordUser:    NewDiscordUserClient(cfg),
+		ctx:                     ctx,
+		config:                  cfg,
+		DiscordMessage:          NewDiscordMessageClient(cfg),
+		DiscordMessageEmbedding: NewDiscordMessageEmbeddingClient(cfg),
+		DiscordUser:             NewDiscordUserClient(cfg),
 	}, nil
 }
 
@@ -153,10 +158,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:            ctx,
-		config:         cfg,
-		DiscordMessage: NewDiscordMessageClient(cfg),
-		DiscordUser:    NewDiscordUserClient(cfg),
+		ctx:                     ctx,
+		config:                  cfg,
+		DiscordMessage:          NewDiscordMessageClient(cfg),
+		DiscordMessageEmbedding: NewDiscordMessageEmbeddingClient(cfg),
+		DiscordUser:             NewDiscordUserClient(cfg),
 	}, nil
 }
 
@@ -186,6 +192,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.DiscordMessage.Use(hooks...)
+	c.DiscordMessageEmbedding.Use(hooks...)
 	c.DiscordUser.Use(hooks...)
 }
 
@@ -193,6 +200,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.DiscordMessage.Intercept(interceptors...)
+	c.DiscordMessageEmbedding.Intercept(interceptors...)
 	c.DiscordUser.Intercept(interceptors...)
 }
 
@@ -201,6 +209,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *DiscordMessageMutation:
 		return c.DiscordMessage.mutate(ctx, m)
+	case *DiscordMessageEmbeddingMutation:
+		return c.DiscordMessageEmbedding.mutate(ctx, m)
 	case *DiscordUserMutation:
 		return c.DiscordUser.mutate(ctx, m)
 	default:
@@ -332,6 +342,22 @@ func (c *DiscordMessageClient) QueryUser(_m *DiscordMessage) *DiscordUserQuery {
 	return query
 }
 
+// QueryEmbeddings queries the embeddings edge of a DiscordMessage.
+func (c *DiscordMessageClient) QueryEmbeddings(_m *DiscordMessage) *DiscordMessageEmbeddingQuery {
+	query := (&DiscordMessageEmbeddingClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, id),
+			sqlgraph.To(discordmessageembedding.Table, discordmessageembedding.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, discordmessage.EmbeddingsTable, discordmessage.EmbeddingsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *DiscordMessageClient) Hooks() []Hook {
 	return c.hooks.DiscordMessage
@@ -354,6 +380,155 @@ func (c *DiscordMessageClient) mutate(ctx context.Context, m *DiscordMessageMuta
 		return (&DiscordMessageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown DiscordMessage mutation op: %q", m.Op())
+	}
+}
+
+// DiscordMessageEmbeddingClient is a client for the DiscordMessageEmbedding schema.
+type DiscordMessageEmbeddingClient struct {
+	config
+}
+
+// NewDiscordMessageEmbeddingClient returns a client for the DiscordMessageEmbedding from the given config.
+func NewDiscordMessageEmbeddingClient(c config) *DiscordMessageEmbeddingClient {
+	return &DiscordMessageEmbeddingClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `discordmessageembedding.Hooks(f(g(h())))`.
+func (c *DiscordMessageEmbeddingClient) Use(hooks ...Hook) {
+	c.hooks.DiscordMessageEmbedding = append(c.hooks.DiscordMessageEmbedding, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `discordmessageembedding.Intercept(f(g(h())))`.
+func (c *DiscordMessageEmbeddingClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DiscordMessageEmbedding = append(c.inters.DiscordMessageEmbedding, interceptors...)
+}
+
+// Create returns a builder for creating a DiscordMessageEmbedding entity.
+func (c *DiscordMessageEmbeddingClient) Create() *DiscordMessageEmbeddingCreate {
+	mutation := newDiscordMessageEmbeddingMutation(c.config, OpCreate)
+	return &DiscordMessageEmbeddingCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DiscordMessageEmbedding entities.
+func (c *DiscordMessageEmbeddingClient) CreateBulk(builders ...*DiscordMessageEmbeddingCreate) *DiscordMessageEmbeddingCreateBulk {
+	return &DiscordMessageEmbeddingCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DiscordMessageEmbeddingClient) MapCreateBulk(slice any, setFunc func(*DiscordMessageEmbeddingCreate, int)) *DiscordMessageEmbeddingCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DiscordMessageEmbeddingCreateBulk{err: fmt.Errorf("calling to DiscordMessageEmbeddingClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DiscordMessageEmbeddingCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DiscordMessageEmbeddingCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DiscordMessageEmbedding.
+func (c *DiscordMessageEmbeddingClient) Update() *DiscordMessageEmbeddingUpdate {
+	mutation := newDiscordMessageEmbeddingMutation(c.config, OpUpdate)
+	return &DiscordMessageEmbeddingUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DiscordMessageEmbeddingClient) UpdateOne(_m *DiscordMessageEmbedding) *DiscordMessageEmbeddingUpdateOne {
+	mutation := newDiscordMessageEmbeddingMutation(c.config, OpUpdateOne, withDiscordMessageEmbedding(_m))
+	return &DiscordMessageEmbeddingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DiscordMessageEmbeddingClient) UpdateOneID(id string) *DiscordMessageEmbeddingUpdateOne {
+	mutation := newDiscordMessageEmbeddingMutation(c.config, OpUpdateOne, withDiscordMessageEmbeddingID(id))
+	return &DiscordMessageEmbeddingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DiscordMessageEmbedding.
+func (c *DiscordMessageEmbeddingClient) Delete() *DiscordMessageEmbeddingDelete {
+	mutation := newDiscordMessageEmbeddingMutation(c.config, OpDelete)
+	return &DiscordMessageEmbeddingDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DiscordMessageEmbeddingClient) DeleteOne(_m *DiscordMessageEmbedding) *DiscordMessageEmbeddingDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DiscordMessageEmbeddingClient) DeleteOneID(id string) *DiscordMessageEmbeddingDeleteOne {
+	builder := c.Delete().Where(discordmessageembedding.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DiscordMessageEmbeddingDeleteOne{builder}
+}
+
+// Query returns a query builder for DiscordMessageEmbedding.
+func (c *DiscordMessageEmbeddingClient) Query() *DiscordMessageEmbeddingQuery {
+	return &DiscordMessageEmbeddingQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDiscordMessageEmbedding},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DiscordMessageEmbedding entity by its id.
+func (c *DiscordMessageEmbeddingClient) Get(ctx context.Context, id string) (*DiscordMessageEmbedding, error) {
+	return c.Query().Where(discordmessageembedding.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DiscordMessageEmbeddingClient) GetX(ctx context.Context, id string) *DiscordMessageEmbedding {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryMessage queries the message edge of a DiscordMessageEmbedding.
+func (c *DiscordMessageEmbeddingClient) QueryMessage(_m *DiscordMessageEmbedding) *DiscordMessageQuery {
+	query := (&DiscordMessageClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordmessageembedding.Table, discordmessageembedding.FieldID, id),
+			sqlgraph.To(discordmessage.Table, discordmessage.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, discordmessageembedding.MessageTable, discordmessageembedding.MessageColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DiscordMessageEmbeddingClient) Hooks() []Hook {
+	return c.hooks.DiscordMessageEmbedding
+}
+
+// Interceptors returns the client interceptors.
+func (c *DiscordMessageEmbeddingClient) Interceptors() []Interceptor {
+	return c.inters.DiscordMessageEmbedding
+}
+
+func (c *DiscordMessageEmbeddingClient) mutate(ctx context.Context, m *DiscordMessageEmbeddingMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DiscordMessageEmbeddingCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DiscordMessageEmbeddingUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DiscordMessageEmbeddingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DiscordMessageEmbeddingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DiscordMessageEmbedding mutation op: %q", m.Op())
 	}
 }
 
@@ -509,9 +684,9 @@ func (c *DiscordUserClient) mutate(ctx context.Context, m *DiscordUserMutation) 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		DiscordMessage, DiscordUser []ent.Hook
+		DiscordMessage, DiscordMessageEmbedding, DiscordUser []ent.Hook
 	}
 	inters struct {
-		DiscordMessage, DiscordUser []ent.Interceptor
+		DiscordMessage, DiscordMessageEmbedding, DiscordUser []ent.Interceptor
 	}
 )

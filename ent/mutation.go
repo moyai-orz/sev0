@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sev0/ent/discordmessage"
+	"sev0/ent/discordmessageembedding"
 	"sev0/ent/discorduser"
 	"sev0/ent/predicate"
 	"sync"
@@ -14,6 +15,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	pgvector "github.com/pgvector/pgvector-go"
 )
 
 const (
@@ -25,25 +27,29 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeDiscordMessage = "DiscordMessage"
-	TypeDiscordUser    = "DiscordUser"
+	TypeDiscordMessage          = "DiscordMessage"
+	TypeDiscordMessageEmbedding = "DiscordMessageEmbedding"
+	TypeDiscordUser             = "DiscordUser"
 )
 
 // DiscordMessageMutation represents an operation that mutates the DiscordMessage nodes in the graph.
 type DiscordMessageMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *string
-	content          *string
-	timestamp        *time.Time
-	edited_timestamp *time.Time
-	clearedFields    map[string]struct{}
-	user             *string
-	cleareduser      bool
-	done             bool
-	oldValue         func(context.Context) (*DiscordMessage, error)
-	predicates       []predicate.DiscordMessage
+	op                Op
+	typ               string
+	id                *string
+	content           *string
+	timestamp         *time.Time
+	edited_timestamp  *time.Time
+	clearedFields     map[string]struct{}
+	user              *string
+	cleareduser       bool
+	embeddings        map[string]struct{}
+	removedembeddings map[string]struct{}
+	clearedembeddings bool
+	done              bool
+	oldValue          func(context.Context) (*DiscordMessage, error)
+	predicates        []predicate.DiscordMessage
 }
 
 var _ ent.Mutation = (*DiscordMessageMutation)(nil)
@@ -347,6 +353,60 @@ func (m *DiscordMessageMutation) ResetUser() {
 	m.cleareduser = false
 }
 
+// AddEmbeddingIDs adds the "embeddings" edge to the DiscordMessageEmbedding entity by ids.
+func (m *DiscordMessageMutation) AddEmbeddingIDs(ids ...string) {
+	if m.embeddings == nil {
+		m.embeddings = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.embeddings[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEmbeddings clears the "embeddings" edge to the DiscordMessageEmbedding entity.
+func (m *DiscordMessageMutation) ClearEmbeddings() {
+	m.clearedembeddings = true
+}
+
+// EmbeddingsCleared reports if the "embeddings" edge to the DiscordMessageEmbedding entity was cleared.
+func (m *DiscordMessageMutation) EmbeddingsCleared() bool {
+	return m.clearedembeddings
+}
+
+// RemoveEmbeddingIDs removes the "embeddings" edge to the DiscordMessageEmbedding entity by IDs.
+func (m *DiscordMessageMutation) RemoveEmbeddingIDs(ids ...string) {
+	if m.removedembeddings == nil {
+		m.removedembeddings = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.embeddings, ids[i])
+		m.removedembeddings[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEmbeddings returns the removed IDs of the "embeddings" edge to the DiscordMessageEmbedding entity.
+func (m *DiscordMessageMutation) RemovedEmbeddingsIDs() (ids []string) {
+	for id := range m.removedembeddings {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EmbeddingsIDs returns the "embeddings" edge IDs in the mutation.
+func (m *DiscordMessageMutation) EmbeddingsIDs() (ids []string) {
+	for id := range m.embeddings {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEmbeddings resets all changes to the "embeddings" edge.
+func (m *DiscordMessageMutation) ResetEmbeddings() {
+	m.embeddings = nil
+	m.clearedembeddings = false
+	m.removedembeddings = nil
+}
+
 // Where appends a list predicates to the DiscordMessageMutation builder.
 func (m *DiscordMessageMutation) Where(ps ...predicate.DiscordMessage) {
 	m.predicates = append(m.predicates, ps...)
@@ -540,9 +600,12 @@ func (m *DiscordMessageMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DiscordMessageMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.user != nil {
 		edges = append(edges, discordmessage.EdgeUser)
+	}
+	if m.embeddings != nil {
+		edges = append(edges, discordmessage.EdgeEmbeddings)
 	}
 	return edges
 }
@@ -555,27 +618,47 @@ func (m *DiscordMessageMutation) AddedIDs(name string) []ent.Value {
 		if id := m.user; id != nil {
 			return []ent.Value{*id}
 		}
+	case discordmessage.EdgeEmbeddings:
+		ids := make([]ent.Value, 0, len(m.embeddings))
+		for id := range m.embeddings {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DiscordMessageMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedembeddings != nil {
+		edges = append(edges, discordmessage.EdgeEmbeddings)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *DiscordMessageMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case discordmessage.EdgeEmbeddings:
+		ids := make([]ent.Value, 0, len(m.removedembeddings))
+		for id := range m.removedembeddings {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DiscordMessageMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.cleareduser {
 		edges = append(edges, discordmessage.EdgeUser)
+	}
+	if m.clearedembeddings {
+		edges = append(edges, discordmessage.EdgeEmbeddings)
 	}
 	return edges
 }
@@ -586,6 +669,8 @@ func (m *DiscordMessageMutation) EdgeCleared(name string) bool {
 	switch name {
 	case discordmessage.EdgeUser:
 		return m.cleareduser
+	case discordmessage.EdgeEmbeddings:
+		return m.clearedembeddings
 	}
 	return false
 }
@@ -608,8 +693,559 @@ func (m *DiscordMessageMutation) ResetEdge(name string) error {
 	case discordmessage.EdgeUser:
 		m.ResetUser()
 		return nil
+	case discordmessage.EdgeEmbeddings:
+		m.ResetEmbeddings()
+		return nil
 	}
 	return fmt.Errorf("unknown DiscordMessage edge %s", name)
+}
+
+// DiscordMessageEmbeddingMutation represents an operation that mutates the DiscordMessageEmbedding nodes in the graph.
+type DiscordMessageEmbeddingMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *string
+	model          *string
+	embedding      *pgvector.Vector
+	created_at     *time.Time
+	clearedFields  map[string]struct{}
+	message        *string
+	clearedmessage bool
+	done           bool
+	oldValue       func(context.Context) (*DiscordMessageEmbedding, error)
+	predicates     []predicate.DiscordMessageEmbedding
+}
+
+var _ ent.Mutation = (*DiscordMessageEmbeddingMutation)(nil)
+
+// discordmessageembeddingOption allows management of the mutation configuration using functional options.
+type discordmessageembeddingOption func(*DiscordMessageEmbeddingMutation)
+
+// newDiscordMessageEmbeddingMutation creates new mutation for the DiscordMessageEmbedding entity.
+func newDiscordMessageEmbeddingMutation(c config, op Op, opts ...discordmessageembeddingOption) *DiscordMessageEmbeddingMutation {
+	m := &DiscordMessageEmbeddingMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDiscordMessageEmbedding,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDiscordMessageEmbeddingID sets the ID field of the mutation.
+func withDiscordMessageEmbeddingID(id string) discordmessageembeddingOption {
+	return func(m *DiscordMessageEmbeddingMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DiscordMessageEmbedding
+		)
+		m.oldValue = func(ctx context.Context) (*DiscordMessageEmbedding, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DiscordMessageEmbedding.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDiscordMessageEmbedding sets the old DiscordMessageEmbedding of the mutation.
+func withDiscordMessageEmbedding(node *DiscordMessageEmbedding) discordmessageembeddingOption {
+	return func(m *DiscordMessageEmbeddingMutation) {
+		m.oldValue = func(context.Context) (*DiscordMessageEmbedding, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DiscordMessageEmbeddingMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DiscordMessageEmbeddingMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of DiscordMessageEmbedding entities.
+func (m *DiscordMessageEmbeddingMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DiscordMessageEmbeddingMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DiscordMessageEmbeddingMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DiscordMessageEmbedding.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetMessageID sets the "message_id" field.
+func (m *DiscordMessageEmbeddingMutation) SetMessageID(s string) {
+	m.message = &s
+}
+
+// MessageID returns the value of the "message_id" field in the mutation.
+func (m *DiscordMessageEmbeddingMutation) MessageID() (r string, exists bool) {
+	v := m.message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMessageID returns the old "message_id" field's value of the DiscordMessageEmbedding entity.
+// If the DiscordMessageEmbedding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageEmbeddingMutation) OldMessageID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMessageID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMessageID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMessageID: %w", err)
+	}
+	return oldValue.MessageID, nil
+}
+
+// ResetMessageID resets all changes to the "message_id" field.
+func (m *DiscordMessageEmbeddingMutation) ResetMessageID() {
+	m.message = nil
+}
+
+// SetModel sets the "model" field.
+func (m *DiscordMessageEmbeddingMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *DiscordMessageEmbeddingMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the DiscordMessageEmbedding entity.
+// If the DiscordMessageEmbedding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageEmbeddingMutation) OldModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *DiscordMessageEmbeddingMutation) ResetModel() {
+	m.model = nil
+}
+
+// SetEmbedding sets the "embedding" field.
+func (m *DiscordMessageEmbeddingMutation) SetEmbedding(pg pgvector.Vector) {
+	m.embedding = &pg
+}
+
+// Embedding returns the value of the "embedding" field in the mutation.
+func (m *DiscordMessageEmbeddingMutation) Embedding() (r pgvector.Vector, exists bool) {
+	v := m.embedding
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmbedding returns the old "embedding" field's value of the DiscordMessageEmbedding entity.
+// If the DiscordMessageEmbedding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageEmbeddingMutation) OldEmbedding(ctx context.Context) (v pgvector.Vector, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmbedding is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmbedding requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmbedding: %w", err)
+	}
+	return oldValue.Embedding, nil
+}
+
+// ResetEmbedding resets all changes to the "embedding" field.
+func (m *DiscordMessageEmbeddingMutation) ResetEmbedding() {
+	m.embedding = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DiscordMessageEmbeddingMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DiscordMessageEmbeddingMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DiscordMessageEmbedding entity.
+// If the DiscordMessageEmbedding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageEmbeddingMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DiscordMessageEmbeddingMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// ClearMessage clears the "message" edge to the DiscordMessage entity.
+func (m *DiscordMessageEmbeddingMutation) ClearMessage() {
+	m.clearedmessage = true
+	m.clearedFields[discordmessageembedding.FieldMessageID] = struct{}{}
+}
+
+// MessageCleared reports if the "message" edge to the DiscordMessage entity was cleared.
+func (m *DiscordMessageEmbeddingMutation) MessageCleared() bool {
+	return m.clearedmessage
+}
+
+// MessageIDs returns the "message" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// MessageID instead. It exists only for internal usage by the builders.
+func (m *DiscordMessageEmbeddingMutation) MessageIDs() (ids []string) {
+	if id := m.message; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMessage resets all changes to the "message" edge.
+func (m *DiscordMessageEmbeddingMutation) ResetMessage() {
+	m.message = nil
+	m.clearedmessage = false
+}
+
+// Where appends a list predicates to the DiscordMessageEmbeddingMutation builder.
+func (m *DiscordMessageEmbeddingMutation) Where(ps ...predicate.DiscordMessageEmbedding) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DiscordMessageEmbeddingMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DiscordMessageEmbeddingMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DiscordMessageEmbedding, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DiscordMessageEmbeddingMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DiscordMessageEmbeddingMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DiscordMessageEmbedding).
+func (m *DiscordMessageEmbeddingMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DiscordMessageEmbeddingMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.message != nil {
+		fields = append(fields, discordmessageembedding.FieldMessageID)
+	}
+	if m.model != nil {
+		fields = append(fields, discordmessageembedding.FieldModel)
+	}
+	if m.embedding != nil {
+		fields = append(fields, discordmessageembedding.FieldEmbedding)
+	}
+	if m.created_at != nil {
+		fields = append(fields, discordmessageembedding.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DiscordMessageEmbeddingMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case discordmessageembedding.FieldMessageID:
+		return m.MessageID()
+	case discordmessageembedding.FieldModel:
+		return m.Model()
+	case discordmessageembedding.FieldEmbedding:
+		return m.Embedding()
+	case discordmessageembedding.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DiscordMessageEmbeddingMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case discordmessageembedding.FieldMessageID:
+		return m.OldMessageID(ctx)
+	case discordmessageembedding.FieldModel:
+		return m.OldModel(ctx)
+	case discordmessageembedding.FieldEmbedding:
+		return m.OldEmbedding(ctx)
+	case discordmessageembedding.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown DiscordMessageEmbedding field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DiscordMessageEmbeddingMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case discordmessageembedding.FieldMessageID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMessageID(v)
+		return nil
+	case discordmessageembedding.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case discordmessageembedding.FieldEmbedding:
+		v, ok := value.(pgvector.Vector)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmbedding(v)
+		return nil
+	case discordmessageembedding.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordMessageEmbedding field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DiscordMessageEmbeddingMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DiscordMessageEmbeddingMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DiscordMessageEmbeddingMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DiscordMessageEmbedding numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DiscordMessageEmbeddingMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DiscordMessageEmbeddingMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DiscordMessageEmbeddingMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown DiscordMessageEmbedding nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DiscordMessageEmbeddingMutation) ResetField(name string) error {
+	switch name {
+	case discordmessageembedding.FieldMessageID:
+		m.ResetMessageID()
+		return nil
+	case discordmessageembedding.FieldModel:
+		m.ResetModel()
+		return nil
+	case discordmessageembedding.FieldEmbedding:
+		m.ResetEmbedding()
+		return nil
+	case discordmessageembedding.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordMessageEmbedding field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DiscordMessageEmbeddingMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.message != nil {
+		edges = append(edges, discordmessageembedding.EdgeMessage)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DiscordMessageEmbeddingMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case discordmessageembedding.EdgeMessage:
+		if id := m.message; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DiscordMessageEmbeddingMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DiscordMessageEmbeddingMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DiscordMessageEmbeddingMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedmessage {
+		edges = append(edges, discordmessageembedding.EdgeMessage)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DiscordMessageEmbeddingMutation) EdgeCleared(name string) bool {
+	switch name {
+	case discordmessageembedding.EdgeMessage:
+		return m.clearedmessage
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DiscordMessageEmbeddingMutation) ClearEdge(name string) error {
+	switch name {
+	case discordmessageembedding.EdgeMessage:
+		m.ClearMessage()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordMessageEmbedding unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DiscordMessageEmbeddingMutation) ResetEdge(name string) error {
+	switch name {
+	case discordmessageembedding.EdgeMessage:
+		m.ResetMessage()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordMessageEmbedding edge %s", name)
 }
 
 // DiscordUserMutation represents an operation that mutates the DiscordUser nodes in the graph.

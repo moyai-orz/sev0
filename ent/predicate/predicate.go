@@ -9,5 +9,8 @@ import (
 // DiscordMessage is the predicate function for discordmessage builders.
 type DiscordMessage func(*sql.Selector)
 
+// DiscordMessageEmbedding is the predicate function for discordmessageembedding builders.
+type DiscordMessageEmbedding func(*sql.Selector)
+
 // DiscordUser is the predicate function for discorduser builders.
 type DiscordUser func(*sql.Selector)

@@ -31,6 +31,7 @@ func (DiscordMessage) Edges() []ent.Edge {
 			Ref("messages").
 			Unique().
 			Field("author_id").Required().Immutable(),
+		edge.To("embeddings", DiscordMessageEmbedding.Type),
 	}
 }
 

@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// DiscordMessage is the client for interacting with the DiscordMessage builders.
 	DiscordMessage *DiscordMessageClient
+	// DiscordMessageEmbedding is the client for interacting with the DiscordMessageEmbedding builders.
+	DiscordMessageEmbedding *DiscordMessageEmbeddingClient
 	// DiscordUser is the client for interacting with the DiscordUser builders.
 	DiscordUser *DiscordUserClient
 
@@ -148,6 +150,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.DiscordMessage = NewDiscordMessageClient(tx.config)
+	tx.DiscordMessageEmbedding = NewDiscordMessageEmbeddingClient(tx.config)
 	tx.DiscordUser = NewDiscordUserClient(tx.config)
 }
 

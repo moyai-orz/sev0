@@ -4,9 +4,11 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 	"sev0/ent/discordmessage"
+	"sev0/ent/discordmessageembedding"
 	"sev0/ent/discorduser"
 	"sev0/ent/predicate"
 
@@ -19,11 +21,12 @@ import (
 // DiscordMessageQuery is the builder for querying DiscordMessage entities.
 type DiscordMessageQuery struct {
 	config
-	ctx        *QueryContext
-	order      []discordmessage.OrderOption
-	inters     []Interceptor
-	predicates []predicate.DiscordMessage
-	withUser   *DiscordUserQuery
+	ctx            *QueryContext
+	order          []discordmessage.OrderOption
+	inters         []Interceptor
+	predicates     []predicate.DiscordMessage
+	withUser       *DiscordUserQuery
+	withEmbeddings *DiscordMessageEmbeddingQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -75,6 +78,28 @@ func (_q *DiscordMessageQuery) QueryUser() *DiscordUserQuery {
 			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, selector),
 			sqlgraph.To(discorduser.Table, discorduser.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, discordmessage.UserTable, discordmessage.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEmbeddings chains the current query on the "embeddings" edge.
+func (_q *DiscordMessageQuery) QueryEmbeddings() *DiscordMessageEmbeddingQuery {
+	query := (&DiscordMessageEmbeddingClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, selector),
+			sqlgraph.To(discordmessageembedding.Table, discordmessageembedding.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, discordmessage.EmbeddingsTable, discordmessage.EmbeddingsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -269,12 +294,13 @@ func (_q *DiscordMessageQuery) Clone() *DiscordMessageQuery {
 		return nil
 	}
 	return &DiscordMessageQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]discordmessage.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.DiscordMessage{}, _q.predicates...),
-		withUser:   _q.withUser.Clone(),
+		config:         _q.config,
+		ctx:            _q.ctx.Clone(),
+		order:          append([]discordmessage.OrderOption{}, _q.order...),
+		inters:         append([]Interceptor{}, _q.inters...),
+		predicates:     append([]predicate.DiscordMessage{}, _q.predicates...),
+		withUser:       _q.withUser.Clone(),
+		withEmbeddings: _q.withEmbeddings.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -289,6 +315,17 @@ func (_q *DiscordMessageQuery) WithUser(opts ...func(*DiscordUserQuery)) *Discor
 		opt(query)
 	}
 	_q.withUser = query
+	return _q
+}
+
+// WithEmbeddings tells the query-builder to eager-load the nodes that are connected to
+// the "embeddings" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *DiscordMessageQuery) WithEmbeddings(opts ...func(*DiscordMessageEmbeddingQuery)) *DiscordMessageQuery {
+	query := (&DiscordMessageEmbeddingClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEmbeddings = query
 	return _q
 }
 
@@ -370,8 +407,9 @@ func (_q *DiscordMessageQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	var (
 		nodes       = []*DiscordMessage{}
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			_q.withUser != nil,
+			_q.withEmbeddings != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -395,6 +433,15 @@ func (_q *DiscordMessageQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	if query := _q.withUser; query != nil {
 		if err := _q.loadUser(ctx, query, nodes, nil,
 			func(n *DiscordMessage, e *DiscordUser) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEmbeddings; query != nil {
+		if err := _q.loadEmbeddings(ctx, query, nodes,
+			func(n *DiscordMessage) { n.Edges.Embeddings = []*DiscordMessageEmbedding{} },
+			func(n *DiscordMessage, e *DiscordMessageEmbedding) {
+				n.Edges.Embeddings = append(n.Edges.Embeddings, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -427,6 +474,36 @@ func (_q *DiscordMessageQuery) loadUser(ctx context.Context, query *DiscordUserQ
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (_q *DiscordMessageQuery) loadEmbeddings(ctx context.Context, query *DiscordMessageEmbeddingQuery, nodes []*DiscordMessage, init func(*DiscordMessage), assign func(*DiscordMessage, *DiscordMessageEmbedding)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*DiscordMessage)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(discordmessageembedding.FieldMessageID)
+	}
+	query.Where(predicate.DiscordMessageEmbedding(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(discordmessage.EmbeddingsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.MessageID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "message_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

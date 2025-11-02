@@ -22,6 +22,8 @@ const (
 	FieldEditedTimestamp = "edited_timestamp"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
+	// EdgeEmbeddings holds the string denoting the embeddings edge name in mutations.
+	EdgeEmbeddings = "embeddings"
 	// Table holds the table name of the discordmessage in the database.
 	Table = "discord_messages"
 	// UserTable is the table that holds the user relation/edge.
@@ -31,6 +33,13 @@ const (
 	UserInverseTable = "discord_users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "author_id"
+	// EmbeddingsTable is the table that holds the embeddings relation/edge.
+	EmbeddingsTable = "discord_message_embeddings"
+	// EmbeddingsInverseTable is the table name for the DiscordMessageEmbedding entity.
+	// It exists in this package in order to avoid circular dependency with the "discordmessageembedding" package.
+	EmbeddingsInverseTable = "discord_message_embeddings"
+	// EmbeddingsColumn is the table column denoting the embeddings relation/edge.
+	EmbeddingsColumn = "message_id"
 )
 
 // Columns holds all SQL columns for discordmessage fields.
@@ -93,10 +102,31 @@ func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByEmbeddingsCount orders the results by embeddings count.
+func ByEmbeddingsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEmbeddingsStep(), opts...)
+	}
+}
+
+// ByEmbeddings orders the results by embeddings terms.
+func ByEmbeddings(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEmbeddingsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UserInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+	)
+}
+func newEmbeddingsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EmbeddingsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EmbeddingsTable, EmbeddingsColumn),
 	)
 }

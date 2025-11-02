@@ -13,31 +13,36 @@ import (
 	"sev0/ent/discorduser"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/firebase/genkit/go/ai"
 )
 
 type DiscordBot struct {
-	Session   *discordgo.Session
+	session   *discordgo.Session
 	entClient *ent.Client
+	embedder  ai.Embedder
 }
 
-func NewDiscordBot(entClient *ent.Client) (*DiscordBot, error) {
+func NewDiscordBot(
+	entClient *ent.Client,
+	embedder ai.Embedder,
+) (*DiscordBot, error) {
 	dg, err := discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 	if err != nil {
 		slog.Error("Failed initializing discordgo", "err", err)
 		return nil, err
 	}
 
-	bot := &DiscordBot{Session: dg, entClient: entClient}
-	bot.Session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentMessageContent
+	bot := &DiscordBot{session: dg, entClient: entClient, embedder: embedder}
+	bot.session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentMessageContent
 
-	bot.Session.AddHandler(bot.messageCreate)
-	bot.Session.AddHandler(bot.messageUpdate)
+	bot.session.AddHandler(bot.messageCreate)
+	bot.session.AddHandler(bot.messageUpdate)
 
 	return bot, nil
 }
 
 func (b *DiscordBot) Start() error {
-	err := b.Session.Open()
+	err := b.session.Open()
 	if err != nil {
 		slog.Error("error opening connection", "err", err)
 		return err
@@ -47,7 +52,7 @@ func (b *DiscordBot) Start() error {
 }
 
 func (b *DiscordBot) Close() {
-	if err := b.Session.Close(); err != nil {
+	if err := b.session.Close(); err != nil {
 		slog.Error("error closing discord session", "err", err)
 	}
 }

@@ -15,19 +15,40 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
+	"github.com/firebase/genkit/go/genkit"
+	compat_oai "github.com/firebase/genkit/go/plugins/compat_oai/openai"
+
+	"github.com/firebase/genkit/go/plugins/googlegenai"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 )
 
 func main() {
+	ctx := context.Background()
+
 	err := godotenv.Load()
 	if err != nil {
 		slog.Error("failed loading *.env file")
 	}
 
+	oai := &compat_oai.OpenAI{}
+
+	g := genkit.Init(ctx,
+		genkit.WithPlugins(&googlegenai.GoogleAI{}, oai),
+		genkit.WithDefaultModel("googleai/gemini-2.5-flash"),
+	)
+
+	embedder := oai.Embedder(g, "text-embedding-3-small")
+
 	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		slog.Error("unable to connect to db", "err", err)
+		return
+	}
+
+	// Enable pgvector extension
+	if _, err := db.ExecContext(ctx, "CREATE EXTENSION IF NOT EXISTS vector;"); err != nil {
+		slog.Error("failed to enable pgvector extension", "err", err)
 		return
 	}
 	drv := entsql.OpenDB(dialect.Postgres, db)
@@ -40,7 +61,7 @@ func main() {
 		return
 	}
 
-	bot, err := discord.NewDiscordBot(entClient)
+	bot, err := discord.NewDiscordBot(entClient, embedder)
 	if err != nil {
 		slog.Error("failed to create discord bot", "err", err)
 		return

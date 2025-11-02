@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sev0/ent/discordmessage"
+	"sev0/ent/discordmessageembedding"
 	"sev0/ent/predicate"
 	"time"
 
@@ -62,9 +63,45 @@ func (_u *DiscordMessageUpdate) ClearEditedTimestamp() *DiscordMessageUpdate {
 	return _u
 }
 
+// AddEmbeddingIDs adds the "embeddings" edge to the DiscordMessageEmbedding entity by IDs.
+func (_u *DiscordMessageUpdate) AddEmbeddingIDs(ids ...string) *DiscordMessageUpdate {
+	_u.mutation.AddEmbeddingIDs(ids...)
+	return _u
+}
+
+// AddEmbeddings adds the "embeddings" edges to the DiscordMessageEmbedding entity.
+func (_u *DiscordMessageUpdate) AddEmbeddings(v ...*DiscordMessageEmbedding) *DiscordMessageUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEmbeddingIDs(ids...)
+}
+
 // Mutation returns the DiscordMessageMutation object of the builder.
 func (_u *DiscordMessageUpdate) Mutation() *DiscordMessageMutation {
 	return _u.mutation
+}
+
+// ClearEmbeddings clears all "embeddings" edges to the DiscordMessageEmbedding entity.
+func (_u *DiscordMessageUpdate) ClearEmbeddings() *DiscordMessageUpdate {
+	_u.mutation.ClearEmbeddings()
+	return _u
+}
+
+// RemoveEmbeddingIDs removes the "embeddings" edge to DiscordMessageEmbedding entities by IDs.
+func (_u *DiscordMessageUpdate) RemoveEmbeddingIDs(ids ...string) *DiscordMessageUpdate {
+	_u.mutation.RemoveEmbeddingIDs(ids...)
+	return _u
+}
+
+// RemoveEmbeddings removes "embeddings" edges to DiscordMessageEmbedding entities.
+func (_u *DiscordMessageUpdate) RemoveEmbeddings(v ...*DiscordMessageEmbedding) *DiscordMessageUpdate {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEmbeddingIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -123,6 +160,51 @@ func (_u *DiscordMessageUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if _u.mutation.EditedTimestampCleared() {
 		_spec.ClearField(discordmessage.FieldEditedTimestamp, field.TypeTime)
 	}
+	if _u.mutation.EmbeddingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   discordmessage.EmbeddingsTable,
+			Columns: []string{discordmessage.EmbeddingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discordmessageembedding.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEmbeddingsIDs(); len(nodes) > 0 && !_u.mutation.EmbeddingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   discordmessage.EmbeddingsTable,
+			Columns: []string{discordmessage.EmbeddingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discordmessageembedding.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EmbeddingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   discordmessage.EmbeddingsTable,
+			Columns: []string{discordmessage.EmbeddingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discordmessageembedding.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{discordmessage.Label}
@@ -177,9 +259,45 @@ func (_u *DiscordMessageUpdateOne) ClearEditedTimestamp() *DiscordMessageUpdateO
 	return _u
 }
 
+// AddEmbeddingIDs adds the "embeddings" edge to the DiscordMessageEmbedding entity by IDs.
+func (_u *DiscordMessageUpdateOne) AddEmbeddingIDs(ids ...string) *DiscordMessageUpdateOne {
+	_u.mutation.AddEmbeddingIDs(ids...)
+	return _u
+}
+
+// AddEmbeddings adds the "embeddings" edges to the DiscordMessageEmbedding entity.
+func (_u *DiscordMessageUpdateOne) AddEmbeddings(v ...*DiscordMessageEmbedding) *DiscordMessageUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEmbeddingIDs(ids...)
+}
+
 // Mutation returns the DiscordMessageMutation object of the builder.
 func (_u *DiscordMessageUpdateOne) Mutation() *DiscordMessageMutation {
 	return _u.mutation
+}
+
+// ClearEmbeddings clears all "embeddings" edges to the DiscordMessageEmbedding entity.
+func (_u *DiscordMessageUpdateOne) ClearEmbeddings() *DiscordMessageUpdateOne {
+	_u.mutation.ClearEmbeddings()
+	return _u
+}
+
+// RemoveEmbeddingIDs removes the "embeddings" edge to DiscordMessageEmbedding entities by IDs.
+func (_u *DiscordMessageUpdateOne) RemoveEmbeddingIDs(ids ...string) *DiscordMessageUpdateOne {
+	_u.mutation.RemoveEmbeddingIDs(ids...)
+	return _u
+}
+
+// RemoveEmbeddings removes "embeddings" edges to DiscordMessageEmbedding entities.
+func (_u *DiscordMessageUpdateOne) RemoveEmbeddings(v ...*DiscordMessageEmbedding) *DiscordMessageUpdateOne {
+	ids := make([]string, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEmbeddingIDs(ids...)
 }
 
 // Where appends a list predicates to the DiscordMessageUpdate builder.
@@ -267,6 +385,51 @@ func (_u *DiscordMessageUpdateOne) sqlSave(ctx context.Context) (_node *DiscordM
 	}
 	if _u.mutation.EditedTimestampCleared() {
 		_spec.ClearField(discordmessage.FieldEditedTimestamp, field.TypeTime)
+	}
+	if _u.mutation.EmbeddingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   discordmessage.EmbeddingsTable,
+			Columns: []string{discordmessage.EmbeddingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discordmessageembedding.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEmbeddingsIDs(); len(nodes) > 0 && !_u.mutation.EmbeddingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   discordmessage.EmbeddingsTable,
+			Columns: []string{discordmessage.EmbeddingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discordmessageembedding.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EmbeddingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   discordmessage.EmbeddingsTable,
+			Columns: []string{discordmessage.EmbeddingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discordmessageembedding.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &DiscordMessage{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -224,6 +224,8 @@ func (b *DiscordBot) handleAsk(
 	b.phc.Enqueue(posthog.Capture{
 		DistinctId: i.Member.User.ID,
 		Event:      "ask",
+		Properties: posthog.NewProperties().
+			Set("global_name", i.Member.User.GlobalName),
 	})
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

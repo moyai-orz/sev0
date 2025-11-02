@@ -4,6 +4,7 @@ package discord
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -17,9 +18,10 @@ import (
 )
 
 type DiscordBot struct {
-	session   *discordgo.Session
-	entClient *ent.Client
-	embedder  ai.Embedder
+	session         *discordgo.Session
+	entClient       *ent.Client
+	embedder        ai.Embedder
+	commandHandlers map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate)
 }
 
 func NewDiscordBot(
@@ -33,10 +35,15 @@ func NewDiscordBot(
 	}
 
 	bot := &DiscordBot{session: dg, entClient: entClient, embedder: embedder}
+
+	bot.commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"ask": bot.handleAsk,
+	}
 	bot.session.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentMessageContent
 
 	bot.session.AddHandler(bot.messageCreate)
 	bot.session.AddHandler(bot.messageUpdate)
+	bot.session.AddHandler(bot.interactionCreate)
 
 	return bot, nil
 }
@@ -46,8 +53,20 @@ func (b *DiscordBot) Start() error {
 	if err != nil {
 		slog.Error("error opening connection", "err", err)
 		return err
-
 	}
+
+	slog.Info("Registering commands")
+	for _, v := range commands {
+		_, err := b.session.ApplicationCommandCreate(
+			b.session.State.User.ID,
+			os.Getenv("DISCORD_GUILD_ID"),
+			v,
+		)
+		if err != nil {
+			slog.Error("Cannot create command", "command", v.Name, "err", err)
+		}
+	}
+
 	return nil
 }
 
@@ -132,4 +151,53 @@ func (b *DiscordBot) messageCreateOrUpdate(
 	}
 
 	slog.Info(string(jsonData))
+}
+
+var commands = []*discordgo.ApplicationCommand{
+	{
+		Name:        "ask",
+		Description: "Ask the bot a question",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "question",
+				Description: "The question you want to ask",
+				Required:    true,
+			},
+		},
+	},
+}
+
+func (b *DiscordBot) interactionCreate(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) {
+	if h, ok := b.commandHandlers[i.ApplicationCommandData().Name]; ok {
+		h(s, i)
+	}
+}
+
+func (b *DiscordBot) handleAsk(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) {
+	options := i.ApplicationCommandData().Options
+	var question string
+	for _, opt := range options {
+		if opt.Name == "question" {
+			question = opt.StringValue()
+			break
+		}
+	}
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: fmt.Sprintf("You asked: \"%s\"", question),
+		},
+	})
+	if err != nil {
+		slog.Error("failed to respond to interaction", "err", err)
+		return
+	}
 }

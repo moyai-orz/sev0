@@ -5,7 +5,7 @@ go 1.25.3
 require (
 	entgo.io/ent v0.14.5
 	github.com/bwmarrin/discordgo v0.29.0
-	github.com/firebase/genkit/go v1.1.0
+	github.com/firebase/genkit/go v1.4.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/pgvector/pgvector-go v0.3.0
@@ -70,7 +70,7 @@ require (
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.27.0 // indirect
 	golang.org/x/tools v0.34.0 // indirect
-	google.golang.org/genai v1.30.0 // indirect
+	google.golang.org/genai v1.41.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/grpc v1.73.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect

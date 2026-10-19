@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"sort"
+	"strings"
 	"syscall"
 	"time"
 
@@ -151,5 +154,27 @@ func databaseConfig(databaseURL string) (*pgx.ConnConfig, error) {
 	if config.ConnectTimeout == 0 {
 		config.ConnectTimeout = 5 * time.Second
 	}
+
+	// Railway private networking can publish an unreachable IPv4 route alongside
+	// working IPv6. Prefer IPv6 without removing IPv4 fallback or caching DNS.
+	if strings.HasSuffix(config.Host, ".railway.internal") {
+		lookup := config.LookupFunc
+		config.LookupFunc = func(ctx context.Context, host string) ([]string, error) {
+			addresses, err := lookup(ctx, host)
+			if err != nil {
+				return nil, err
+			}
+			return preferIPv6(addresses), nil
+		}
+	}
 	return config, nil
+}
+
+func preferIPv6(addresses []string) []string {
+	addresses = append([]string(nil), addresses...)
+	sort.SliceStable(addresses, func(i, j int) bool {
+		a, b := net.ParseIP(addresses[i]), net.ParseIP(addresses[j])
+		return a != nil && a.To4() == nil && !(b != nil && b.To4() == nil)
+	})
+	return addresses
 }

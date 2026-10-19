@@ -18,6 +18,11 @@ import (
 // Exercise Genkit's actual tool loop and context propagation, not just the
 // search function, without sending Discord history to an external provider.
 func TestHistoryToolScopeThroughModel(t *testing.T) {
+	for _, tool := range []string{"search_history", "recent_messages"} {
+		t.Run(tool, func(t *testing.T) { testHistoryToolScopeThroughModel(t, tool) })
+	}
+}
+func testHistoryToolScopeThroughModel(t *testing.T, tool string) {
 	t.Setenv("OPENROUTER_API_KEY", "test-key")
 	t.Setenv("OPENROUTER_MODEL", "")
 	c := testutil.Database(t)
@@ -45,6 +50,11 @@ func TestHistoryToolScopeThroughModel(t *testing.T) {
 			t.Fatalf("missing history tools: %d", len(body.Tools))
 		}
 		response := `{"id":"one","object":"chat.completion","choices":[{"index":0,"finish_reason":"tool_calls","message":{"role":"assistant","tool_calls":[{"id":"call1","type":"function","function":{"name":"search_history","arguments":"{\"query\":\"deploy\"}"}}]}}]}`
+		if tool == "recent_messages" {
+			response = strings.ReplaceAll(response, "search_history", "recent_messages")
+			response = strings.ReplaceAll(response, `\"query\":\"deploy\"`, `\"channel_id\":\"other\"`)
+		}
+
 		if calls == 2 {
 			found := false
 			for _, m := range body.Messages {

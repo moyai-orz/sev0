@@ -260,7 +260,7 @@ func Context(ctx context.Context, client *ent.Client, id string) (*RecentMessage
 }
 
 func DefineRecentMessagesTool(g *genkit.Genkit, client *ent.Client) ai.Tool {
-	return genkit.DefineTool(g, "recent_messages", "Read recent recorded messages in the current channel or a specified permitted channel, in chronological order. Maximum 40 messages.", func(ctx *ai.ToolContext, input RecentMessagesInput) (*RecentMessagesOutput, error) {
+	return defineHistoryTool(g, "recent_messages", "Read recent recorded messages in the current channel or a specified permitted channel, in chronological order. Maximum 40 messages.", func(ctx *ai.ToolContext, input RecentMessagesInput) (*RecentMessagesOutput, error) {
 		scope, _ := ctx.Value(scopeKey{}).(Scope)
 		channelID := input.ChannelID
 		if channelID == "" {
@@ -270,12 +270,12 @@ func DefineRecentMessagesTool(g *genkit.Genkit, client *ent.Client) ai.Tool {
 	})
 }
 func DefineSearchTool(g *genkit.Genkit, client *ent.Client) ai.Tool {
-	return genkit.DefineTool(g, "search_history", "Search recorded history across permitted channels in this server by literal keywords, author and dates. Search short keywords, retry synonyms if empty. Results include source links; use message_context before drawing conclusions from isolated remarks.", func(ctx *ai.ToolContext, input SearchInput) (*RecentMessagesOutput, error) {
+	return defineHistoryTool(g, "search_history", "Search recorded history across permitted channels in this server by literal keywords, author and dates. Search short keywords, retry synonyms if empty. Results include source links; use message_context before drawing conclusions from isolated remarks.", func(ctx *ai.ToolContext, input SearchInput) (*RecentMessagesOutput, error) {
 		return toolResult(Search(ctx, client, input))
 	})
 }
 func DefineContextTool(g *genkit.Genkit, client *ent.Client) ai.Tool {
-	return genkit.DefineTool(g, "message_context", "Read surrounding messages and the recorded reply parent for a message ID returned by history search, within that message's source channel.", func(ctx *ai.ToolContext, input ContextInput) (*RecentMessagesOutput, error) {
+	return defineHistoryTool(g, "message_context", "Read surrounding messages and the recorded reply parent for a message ID returned by history search, within that message's source channel.", func(ctx *ai.ToolContext, input ContextInput) (*RecentMessagesOutput, error) {
 		return toolResult(Context(ctx, client, input.MessageID))
 	})
 }

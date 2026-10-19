@@ -18,7 +18,7 @@ import (
 // Exercise Genkit's actual tool loop and context propagation, not just the
 // search function, without sending Discord history to an external provider.
 func TestHistoryToolScopeThroughModel(t *testing.T) {
-	for _, tool := range []string{"search_history", "recent_messages"} {
+	for _, tool := range []string{"search_history", "recent_messages", "numeric_channel"} {
 		t.Run(tool, func(t *testing.T) { testHistoryToolScopeThroughModel(t, tool) })
 	}
 }
@@ -55,7 +55,24 @@ func testHistoryToolScopeThroughModel(t *testing.T, tool string) {
 			response = strings.ReplaceAll(response, `\"query\":\"deploy\"`, `\"channel_id\":\"other\"`)
 		}
 
-		if calls == 2 {
+		if tool == "numeric_channel" && calls == 1 {
+			response = strings.ReplaceAll(response, `\"query\":\"deploy\"`, `\"channel_id\":1561569042278649936`)
+		}
+		if tool == "numeric_channel" && calls == 2 {
+			found := false
+			for _, m := range body.Messages {
+				if m.Role == "tool" {
+					content, _ := m.Content.(string)
+					if strings.Contains(content, "must be a quoted string") && strings.Contains(content, "No search was performed") {
+						found = true
+					}
+				}
+			}
+			if !found {
+				t.Fatal("numeric ID did not produce a recoverable correction")
+			}
+		}
+		if (tool != "numeric_channel" && calls == 2) || (tool == "numeric_channel" && calls == 3) {
 			found := false
 			for _, m := range body.Messages {
 				if m.Role == "tool" {
@@ -80,7 +97,11 @@ func testHistoryToolScopeThroughModel(t *testing.T, tool string) {
 		t.Fatal(err)
 	}
 	got, err := genkit.GenerateText(ctx, gm.G, ai.WithPrompt("Find the deploy incident"), ai.WithTools(gm.RecentMessagesTool, gm.SearchHistoryTool, gm.MessageContextTool), ai.WithMaxTurns(3))
-	if err != nil || got != "Found the incident." || calls != 2 {
+	expectedCalls := 2
+	if tool == "numeric_channel" {
+		expectedCalls = 3
+	}
+	if err != nil || got != "Found the incident." || calls != expectedCalls {
 		t.Fatalf("tool roundtrip failed: %q %v (%d calls)", got, err, calls)
 	}
 }

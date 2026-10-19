@@ -39,6 +39,9 @@ type DiscordMessageMutation struct {
 	typ               string
 	id                *string
 	content           *string
+	guild_id          *string
+	channel_id        *string
+	reply_to_id       *string
 	timestamp         *time.Time
 	edited_timestamp  *time.Time
 	clearedFields     map[string]struct{}
@@ -190,6 +193,153 @@ func (m *DiscordMessageMutation) OldContent(ctx context.Context) (v string, err 
 // ResetContent resets all changes to the "content" field.
 func (m *DiscordMessageMutation) ResetContent() {
 	m.content = nil
+}
+
+// SetGuildID sets the "guild_id" field.
+func (m *DiscordMessageMutation) SetGuildID(s string) {
+	m.guild_id = &s
+}
+
+// GuildID returns the value of the "guild_id" field in the mutation.
+func (m *DiscordMessageMutation) GuildID() (r string, exists bool) {
+	v := m.guild_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGuildID returns the old "guild_id" field's value of the DiscordMessage entity.
+// If the DiscordMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageMutation) OldGuildID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGuildID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGuildID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGuildID: %w", err)
+	}
+	return oldValue.GuildID, nil
+}
+
+// ClearGuildID clears the value of the "guild_id" field.
+func (m *DiscordMessageMutation) ClearGuildID() {
+	m.guild_id = nil
+	m.clearedFields[discordmessage.FieldGuildID] = struct{}{}
+}
+
+// GuildIDCleared returns if the "guild_id" field was cleared in this mutation.
+func (m *DiscordMessageMutation) GuildIDCleared() bool {
+	_, ok := m.clearedFields[discordmessage.FieldGuildID]
+	return ok
+}
+
+// ResetGuildID resets all changes to the "guild_id" field.
+func (m *DiscordMessageMutation) ResetGuildID() {
+	m.guild_id = nil
+	delete(m.clearedFields, discordmessage.FieldGuildID)
+}
+
+// SetChannelID sets the "channel_id" field.
+func (m *DiscordMessageMutation) SetChannelID(s string) {
+	m.channel_id = &s
+}
+
+// ChannelID returns the value of the "channel_id" field in the mutation.
+func (m *DiscordMessageMutation) ChannelID() (r string, exists bool) {
+	v := m.channel_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChannelID returns the old "channel_id" field's value of the DiscordMessage entity.
+// If the DiscordMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageMutation) OldChannelID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChannelID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChannelID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChannelID: %w", err)
+	}
+	return oldValue.ChannelID, nil
+}
+
+// ClearChannelID clears the value of the "channel_id" field.
+func (m *DiscordMessageMutation) ClearChannelID() {
+	m.channel_id = nil
+	m.clearedFields[discordmessage.FieldChannelID] = struct{}{}
+}
+
+// ChannelIDCleared returns if the "channel_id" field was cleared in this mutation.
+func (m *DiscordMessageMutation) ChannelIDCleared() bool {
+	_, ok := m.clearedFields[discordmessage.FieldChannelID]
+	return ok
+}
+
+// ResetChannelID resets all changes to the "channel_id" field.
+func (m *DiscordMessageMutation) ResetChannelID() {
+	m.channel_id = nil
+	delete(m.clearedFields, discordmessage.FieldChannelID)
+}
+
+// SetReplyToID sets the "reply_to_id" field.
+func (m *DiscordMessageMutation) SetReplyToID(s string) {
+	m.reply_to_id = &s
+}
+
+// ReplyToID returns the value of the "reply_to_id" field in the mutation.
+func (m *DiscordMessageMutation) ReplyToID() (r string, exists bool) {
+	v := m.reply_to_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReplyToID returns the old "reply_to_id" field's value of the DiscordMessage entity.
+// If the DiscordMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageMutation) OldReplyToID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReplyToID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReplyToID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReplyToID: %w", err)
+	}
+	return oldValue.ReplyToID, nil
+}
+
+// ClearReplyToID clears the value of the "reply_to_id" field.
+func (m *DiscordMessageMutation) ClearReplyToID() {
+	m.reply_to_id = nil
+	m.clearedFields[discordmessage.FieldReplyToID] = struct{}{}
+}
+
+// ReplyToIDCleared returns if the "reply_to_id" field was cleared in this mutation.
+func (m *DiscordMessageMutation) ReplyToIDCleared() bool {
+	_, ok := m.clearedFields[discordmessage.FieldReplyToID]
+	return ok
+}
+
+// ResetReplyToID resets all changes to the "reply_to_id" field.
+func (m *DiscordMessageMutation) ResetReplyToID() {
+	m.reply_to_id = nil
+	delete(m.clearedFields, discordmessage.FieldReplyToID)
 }
 
 // SetAuthorID sets the "author_id" field.
@@ -441,9 +591,18 @@ func (m *DiscordMessageMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DiscordMessageMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 7)
 	if m.content != nil {
 		fields = append(fields, discordmessage.FieldContent)
+	}
+	if m.guild_id != nil {
+		fields = append(fields, discordmessage.FieldGuildID)
+	}
+	if m.channel_id != nil {
+		fields = append(fields, discordmessage.FieldChannelID)
+	}
+	if m.reply_to_id != nil {
+		fields = append(fields, discordmessage.FieldReplyToID)
 	}
 	if m.user != nil {
 		fields = append(fields, discordmessage.FieldAuthorID)
@@ -464,6 +623,12 @@ func (m *DiscordMessageMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case discordmessage.FieldContent:
 		return m.Content()
+	case discordmessage.FieldGuildID:
+		return m.GuildID()
+	case discordmessage.FieldChannelID:
+		return m.ChannelID()
+	case discordmessage.FieldReplyToID:
+		return m.ReplyToID()
 	case discordmessage.FieldAuthorID:
 		return m.AuthorID()
 	case discordmessage.FieldTimestamp:
@@ -481,6 +646,12 @@ func (m *DiscordMessageMutation) OldField(ctx context.Context, name string) (ent
 	switch name {
 	case discordmessage.FieldContent:
 		return m.OldContent(ctx)
+	case discordmessage.FieldGuildID:
+		return m.OldGuildID(ctx)
+	case discordmessage.FieldChannelID:
+		return m.OldChannelID(ctx)
+	case discordmessage.FieldReplyToID:
+		return m.OldReplyToID(ctx)
 	case discordmessage.FieldAuthorID:
 		return m.OldAuthorID(ctx)
 	case discordmessage.FieldTimestamp:
@@ -502,6 +673,27 @@ func (m *DiscordMessageMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetContent(v)
+		return nil
+	case discordmessage.FieldGuildID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGuildID(v)
+		return nil
+	case discordmessage.FieldChannelID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChannelID(v)
+		return nil
+	case discordmessage.FieldReplyToID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReplyToID(v)
 		return nil
 	case discordmessage.FieldAuthorID:
 		v, ok := value.(string)
@@ -554,6 +746,15 @@ func (m *DiscordMessageMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *DiscordMessageMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(discordmessage.FieldGuildID) {
+		fields = append(fields, discordmessage.FieldGuildID)
+	}
+	if m.FieldCleared(discordmessage.FieldChannelID) {
+		fields = append(fields, discordmessage.FieldChannelID)
+	}
+	if m.FieldCleared(discordmessage.FieldReplyToID) {
+		fields = append(fields, discordmessage.FieldReplyToID)
+	}
 	if m.FieldCleared(discordmessage.FieldEditedTimestamp) {
 		fields = append(fields, discordmessage.FieldEditedTimestamp)
 	}
@@ -571,6 +772,15 @@ func (m *DiscordMessageMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *DiscordMessageMutation) ClearField(name string) error {
 	switch name {
+	case discordmessage.FieldGuildID:
+		m.ClearGuildID()
+		return nil
+	case discordmessage.FieldChannelID:
+		m.ClearChannelID()
+		return nil
+	case discordmessage.FieldReplyToID:
+		m.ClearReplyToID()
+		return nil
 	case discordmessage.FieldEditedTimestamp:
 		m.ClearEditedTimestamp()
 		return nil
@@ -584,6 +794,15 @@ func (m *DiscordMessageMutation) ResetField(name string) error {
 	switch name {
 	case discordmessage.FieldContent:
 		m.ResetContent()
+		return nil
+	case discordmessage.FieldGuildID:
+		m.ResetGuildID()
+		return nil
+	case discordmessage.FieldChannelID:
+		m.ResetChannelID()
+		return nil
+	case discordmessage.FieldReplyToID:
+		m.ResetReplyToID()
 		return nil
 	case discordmessage.FieldAuthorID:
 		m.ResetAuthorID()

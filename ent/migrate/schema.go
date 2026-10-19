@@ -13,6 +13,9 @@ var (
 	DiscordMessagesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
+		{Name: "guild_id", Type: field.TypeString, Nullable: true},
+		{Name: "channel_id", Type: field.TypeString, Nullable: true},
+		{Name: "reply_to_id", Type: field.TypeString, Nullable: true},
 		{Name: "timestamp", Type: field.TypeTime},
 		{Name: "edited_timestamp", Type: field.TypeTime, Nullable: true},
 		{Name: "author_id", Type: field.TypeString},
@@ -25,19 +28,29 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "discord_messages_discord_users_messages",
-				Columns:    []*schema.Column{DiscordMessagesColumns[4]},
+				Columns:    []*schema.Column{DiscordMessagesColumns[7]},
 				RefColumns: []*schema.Column{DiscordUsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
+				Name:    "discordmessage_guild_id_channel_id_timestamp",
+				Unique:  false,
+				Columns: []*schema.Column{DiscordMessagesColumns[2], DiscordMessagesColumns[3], DiscordMessagesColumns[5]},
+			},
+			{
+				Name:    "discordmessage_guild_id_channel_id_author_id_timestamp",
+				Unique:  false,
+				Columns: []*schema.Column{DiscordMessagesColumns[2], DiscordMessagesColumns[3], DiscordMessagesColumns[7], DiscordMessagesColumns[5]},
+			},
+			{
 				Name:    "discordmessage_timestamp",
 				Unique:  false,
-				Columns: []*schema.Column{DiscordMessagesColumns[2]},
+				Columns: []*schema.Column{DiscordMessagesColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
-						DiscordMessagesColumns[2].Name: true,
+						DiscordMessagesColumns[5].Name: true,
 					},
 				},
 			},

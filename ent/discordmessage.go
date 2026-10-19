@@ -20,6 +20,12 @@ type DiscordMessage struct {
 	ID string `json:"id,omitempty"`
 	// Content holds the value of the "content" field.
 	Content string `json:"content,omitempty"`
+	// GuildID holds the value of the "guild_id" field.
+	GuildID string `json:"guild_id,omitempty"`
+	// ChannelID holds the value of the "channel_id" field.
+	ChannelID string `json:"channel_id,omitempty"`
+	// ReplyToID holds the value of the "reply_to_id" field.
+	ReplyToID string `json:"reply_to_id,omitempty"`
 	// AuthorID holds the value of the "author_id" field.
 	AuthorID string `json:"author_id,omitempty"`
 	// Timestamp holds the value of the "timestamp" field.
@@ -68,7 +74,7 @@ func (*DiscordMessage) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case discordmessage.FieldID, discordmessage.FieldContent, discordmessage.FieldAuthorID:
+		case discordmessage.FieldID, discordmessage.FieldContent, discordmessage.FieldGuildID, discordmessage.FieldChannelID, discordmessage.FieldReplyToID, discordmessage.FieldAuthorID:
 			values[i] = new(sql.NullString)
 		case discordmessage.FieldTimestamp, discordmessage.FieldEditedTimestamp:
 			values[i] = new(sql.NullTime)
@@ -98,6 +104,24 @@ func (_m *DiscordMessage) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field content", values[i])
 			} else if value.Valid {
 				_m.Content = value.String
+			}
+		case discordmessage.FieldGuildID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field guild_id", values[i])
+			} else if value.Valid {
+				_m.GuildID = value.String
+			}
+		case discordmessage.FieldChannelID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field channel_id", values[i])
+			} else if value.Valid {
+				_m.ChannelID = value.String
+			}
+		case discordmessage.FieldReplyToID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field reply_to_id", values[i])
+			} else if value.Valid {
+				_m.ReplyToID = value.String
 			}
 		case discordmessage.FieldAuthorID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -165,6 +189,15 @@ func (_m *DiscordMessage) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("content=")
 	builder.WriteString(_m.Content)
+	builder.WriteString(", ")
+	builder.WriteString("guild_id=")
+	builder.WriteString(_m.GuildID)
+	builder.WriteString(", ")
+	builder.WriteString("channel_id=")
+	builder.WriteString(_m.ChannelID)
+	builder.WriteString(", ")
+	builder.WriteString("reply_to_id=")
+	builder.WriteString(_m.ReplyToID)
 	builder.WriteString(", ")
 	builder.WriteString("author_id=")
 	builder.WriteString(_m.AuthorID)

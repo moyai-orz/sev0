@@ -21,6 +21,8 @@ type GenkitMagic struct {
 	G *genkit.Genkit
 
 	RecentMessagesTool ai.Tool
+	SearchHistoryTool  ai.Tool
+	MessageContextTool ai.Tool
 }
 
 func Init(
@@ -50,5 +52,7 @@ func Init(
 	return GenkitMagic{
 		G:                  g,
 		RecentMessagesTool: recentMessagesTool,
+		SearchHistoryTool:  tools.DefineSearchTool(g, entClient),
+		MessageContextTool: tools.DefineContextTool(g, entClient),
 	}, nil
 }

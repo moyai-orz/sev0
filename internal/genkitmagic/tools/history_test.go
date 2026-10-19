@@ -142,3 +142,10 @@ func TestMigrationPreservesUnscopedHistory(t *testing.T) {
 		t.Fatal("unscoped legacy row exposed", err)
 	}
 }
+
+func TestToolResultFailureIsNotEmptyEvidence(t *testing.T) {
+	out, err := toolResult(nil, fmt.Errorf("secret database details"))
+	if err != nil || len(out.Messages) != 0 || !strings.Contains(out.Coverage, "retrieval failed") || strings.Contains(out.Coverage, "secret") {
+		t.Fatalf("unsafe failure result: %+v %v", out, err)
+	}
+}

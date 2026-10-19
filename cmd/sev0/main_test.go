@@ -53,3 +53,17 @@ func TestDatabaseExplicitTimeout(t *testing.T) {
 		t.Fatalf("explicit timeout overwritten: %v", config.ConnectTimeout)
 	}
 }
+
+func TestPreferIPv6(t *testing.T) {
+	input := []string{"10.0.0.1", "fd12::1", "10.0.0.2", "fd12::2"}
+	got := preferIPv6(input)
+	want := []string{"fd12::1", "fd12::2", "10.0.0.1", "10.0.0.2"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("order: %v", got)
+		}
+	}
+	if input[0] != "10.0.0.1" {
+		t.Fatal("mutated resolver output")
+	}
+}

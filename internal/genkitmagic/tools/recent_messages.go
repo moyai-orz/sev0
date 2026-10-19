@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -51,7 +52,8 @@ type SearchInput struct {
 }
 
 type RecentMessagesInput struct {
-	Limit int `json:"limit,omitempty"`
+	ChannelID string `json:"channel_id,omitempty" jsonschema:"description=Optional permitted channel ID. Defaults to the current channel."`
+	Limit     int    `json:"limit,omitempty"`
 }
 type ContextInput struct {
 	MessageID string `json:"message_id"`
@@ -141,7 +143,7 @@ func Search(ctx context.Context, client *ent.Client, input SearchInput) (*Recent
 	if !after.IsZero() && !before.IsZero() && !after.Before(before) {
 		return nil, fmt.Errorf("after must be earlier than before")
 	}
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	limit := boundedLimit(input.Limit)
 	rows, err := query.Order(ent.Desc(discordmessage.FieldTimestamp), ent.Desc(discordmessage.FieldID)).Limit(limit + 1).WithUser().All(ctx)
@@ -201,7 +203,7 @@ func Context(ctx context.Context, client *ent.Client, id string) (*RecentMessage
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	anchor, err := query.Where(discordmessage.ID(id)).Only(ctx)
 	if ent.IsNotFound(err) {
@@ -258,18 +260,32 @@ func Context(ctx context.Context, client *ent.Client, id string) (*RecentMessage
 }
 
 func DefineRecentMessagesTool(g *genkit.Genkit, client *ent.Client) ai.Tool {
-	return genkit.DefineTool(g, "recent_messages", "Read recent recorded messages in the current channel, in chronological order. Maximum 40 messages.", func(ctx *ai.ToolContext, input RecentMessagesInput) (*RecentMessagesOutput, error) {
+	return genkit.DefineTool(g, "recent_messages", "Read recent recorded messages in the current channel or a specified permitted channel, in chronological order. Maximum 40 messages.", func(ctx *ai.ToolContext, input RecentMessagesInput) (*RecentMessagesOutput, error) {
 		scope, _ := ctx.Value(scopeKey{}).(Scope)
-		return Search(ctx, client, SearchInput{Limit: input.Limit, ChannelID: scope.ChannelID})
+		channelID := input.ChannelID
+		if channelID == "" {
+			channelID = scope.ChannelID
+		}
+		return toolResult(Search(ctx, client, SearchInput{Limit: input.Limit, ChannelID: channelID}))
 	})
 }
 func DefineSearchTool(g *genkit.Genkit, client *ent.Client) ai.Tool {
 	return genkit.DefineTool(g, "search_history", "Search recorded history across permitted channels in this server by literal keywords, author and dates. Search short keywords, retry synonyms if empty. Results include source links; use message_context before drawing conclusions from isolated remarks.", func(ctx *ai.ToolContext, input SearchInput) (*RecentMessagesOutput, error) {
-		return Search(ctx, client, input)
+		return toolResult(Search(ctx, client, input))
 	})
 }
 func DefineContextTool(g *genkit.Genkit, client *ent.Client) ai.Tool {
 	return genkit.DefineTool(g, "message_context", "Read surrounding messages and the recorded reply parent for a message ID returned by history search, within that message's source channel.", func(ctx *ai.ToolContext, input ContextInput) (*RecentMessagesOutput, error) {
-		return Context(ctx, client, input.MessageID)
+		return toolResult(Context(ctx, client, input.MessageID))
 	})
+}
+
+// A retrieval outage is missing evidence, not a reason to abort the entire reply.
+// Keep internal database details out of the model's context.
+func toolResult(out *RecentMessagesOutput, err error) (*RecentMessagesOutput, error) {
+	if err == nil {
+		return out, nil
+	}
+	slog.Warn("history retrieval failed", "err", err)
+	return &RecentMessagesOutput{Messages: []Message{}, Coverage: "History retrieval failed. This is not an empty search result. Do not infer that no matching messages exist or invent historical claims. Explain that recorded history is temporarily unavailable."}, nil
 }

@@ -22,7 +22,6 @@ import (
 type DiscordBot struct {
 	session         *discordgo.Session
 	entClient       *ent.Client
-	embedder        ai.Embedder
 	gm              genkitmagic.GenkitMagic
 	phc             posthog.Client
 	logger          *slog.Logger
@@ -31,7 +30,6 @@ type DiscordBot struct {
 
 func NewDiscordBot(
 	entClient *ent.Client,
-	embedder ai.Embedder,
 	genkitMagic genkitmagic.GenkitMagic,
 	phc posthog.Client,
 	logger *slog.Logger,
@@ -45,7 +43,6 @@ func NewDiscordBot(
 	bot := &DiscordBot{
 		session:   dg,
 		entClient: entClient,
-		embedder:  embedder,
 		gm:        genkitMagic,
 		phc:       phc,
 		logger:    logger,
@@ -274,24 +271,6 @@ func (b *DiscordBot) handleAsk(
 
 	b.logger.Info("Handling ask command", "question", question)
 
-	config := map[string]any{
-		"safetySettings": []map[string]any{
-			{"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-			{
-				"category":  "HARM_CATEGORY_HATE_SPEECH",
-				"threshold": "BLOCK_NONE",
-			},
-			{
-				"category":  "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-				"threshold": "BLOCK_NONE",
-			},
-			{
-				"category":  "HARM_CATEGORY_DANGEROUS_CONTENT",
-				"threshold": "BLOCK_NONE",
-			},
-		},
-	}
-
 	resp, err := genkit.GenerateText(
 		ctx,
 		b.gm.G,
@@ -300,7 +279,6 @@ func (b *DiscordBot) handleAsk(
 		ai.WithSystem(
 			"You are a funny & troll Discord bot that lives in this server. You have access to a searchable database of all past messages from this server — use it to recall context, patterns, and memorable moments when replying. Please do not ask any follow up questions, just answer to the best of your ability with the information you have. You should also act like ThePrimeagen.",
 		),
-		ai.WithConfig(config),
 	)
 
 	var content string

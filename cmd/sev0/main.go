@@ -75,15 +75,13 @@ func main() {
 		return
 	}
 
-	embedder := gm.OAI.Embedder(gm.G, "text-embedding-3-small")
-
 	// Run the auto migration tool.
 	if err := entClient.Schema.Create(context.Background()); err != nil {
 		logger.Error("failed creating schema resources", "err", err)
 		return
 	}
 
-	bot, err := discord.NewDiscordBot(entClient, embedder, gm, phc, logger)
+	bot, err := discord.NewDiscordBot(entClient, gm, phc, logger)
 	if err != nil {
 		logger.Error("failed to create discord bot", "err", err)
 		return

@@ -43,6 +43,66 @@ func (_u *DiscordMessageUpdate) SetNillableContent(v *string) *DiscordMessageUpd
 	return _u
 }
 
+// SetGuildID sets the "guild_id" field.
+func (_u *DiscordMessageUpdate) SetGuildID(v string) *DiscordMessageUpdate {
+	_u.mutation.SetGuildID(v)
+	return _u
+}
+
+// SetNillableGuildID sets the "guild_id" field if the given value is not nil.
+func (_u *DiscordMessageUpdate) SetNillableGuildID(v *string) *DiscordMessageUpdate {
+	if v != nil {
+		_u.SetGuildID(*v)
+	}
+	return _u
+}
+
+// ClearGuildID clears the value of the "guild_id" field.
+func (_u *DiscordMessageUpdate) ClearGuildID() *DiscordMessageUpdate {
+	_u.mutation.ClearGuildID()
+	return _u
+}
+
+// SetChannelID sets the "channel_id" field.
+func (_u *DiscordMessageUpdate) SetChannelID(v string) *DiscordMessageUpdate {
+	_u.mutation.SetChannelID(v)
+	return _u
+}
+
+// SetNillableChannelID sets the "channel_id" field if the given value is not nil.
+func (_u *DiscordMessageUpdate) SetNillableChannelID(v *string) *DiscordMessageUpdate {
+	if v != nil {
+		_u.SetChannelID(*v)
+	}
+	return _u
+}
+
+// ClearChannelID clears the value of the "channel_id" field.
+func (_u *DiscordMessageUpdate) ClearChannelID() *DiscordMessageUpdate {
+	_u.mutation.ClearChannelID()
+	return _u
+}
+
+// SetReplyToID sets the "reply_to_id" field.
+func (_u *DiscordMessageUpdate) SetReplyToID(v string) *DiscordMessageUpdate {
+	_u.mutation.SetReplyToID(v)
+	return _u
+}
+
+// SetNillableReplyToID sets the "reply_to_id" field if the given value is not nil.
+func (_u *DiscordMessageUpdate) SetNillableReplyToID(v *string) *DiscordMessageUpdate {
+	if v != nil {
+		_u.SetReplyToID(*v)
+	}
+	return _u
+}
+
+// ClearReplyToID clears the value of the "reply_to_id" field.
+func (_u *DiscordMessageUpdate) ClearReplyToID() *DiscordMessageUpdate {
+	_u.mutation.ClearReplyToID()
+	return _u
+}
+
 // SetEditedTimestamp sets the "edited_timestamp" field.
 func (_u *DiscordMessageUpdate) SetEditedTimestamp(v time.Time) *DiscordMessageUpdate {
 	_u.mutation.SetEditedTimestamp(v)
@@ -154,6 +214,24 @@ func (_u *DiscordMessageUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if value, ok := _u.mutation.Content(); ok {
 		_spec.SetField(discordmessage.FieldContent, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.GuildID(); ok {
+		_spec.SetField(discordmessage.FieldGuildID, field.TypeString, value)
+	}
+	if _u.mutation.GuildIDCleared() {
+		_spec.ClearField(discordmessage.FieldGuildID, field.TypeString)
+	}
+	if value, ok := _u.mutation.ChannelID(); ok {
+		_spec.SetField(discordmessage.FieldChannelID, field.TypeString, value)
+	}
+	if _u.mutation.ChannelIDCleared() {
+		_spec.ClearField(discordmessage.FieldChannelID, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReplyToID(); ok {
+		_spec.SetField(discordmessage.FieldReplyToID, field.TypeString, value)
+	}
+	if _u.mutation.ReplyToIDCleared() {
+		_spec.ClearField(discordmessage.FieldReplyToID, field.TypeString)
+	}
 	if value, ok := _u.mutation.EditedTimestamp(); ok {
 		_spec.SetField(discordmessage.FieldEditedTimestamp, field.TypeTime, value)
 	}
@@ -236,6 +314,66 @@ func (_u *DiscordMessageUpdateOne) SetNillableContent(v *string) *DiscordMessage
 	if v != nil {
 		_u.SetContent(*v)
 	}
+	return _u
+}
+
+// SetGuildID sets the "guild_id" field.
+func (_u *DiscordMessageUpdateOne) SetGuildID(v string) *DiscordMessageUpdateOne {
+	_u.mutation.SetGuildID(v)
+	return _u
+}
+
+// SetNillableGuildID sets the "guild_id" field if the given value is not nil.
+func (_u *DiscordMessageUpdateOne) SetNillableGuildID(v *string) *DiscordMessageUpdateOne {
+	if v != nil {
+		_u.SetGuildID(*v)
+	}
+	return _u
+}
+
+// ClearGuildID clears the value of the "guild_id" field.
+func (_u *DiscordMessageUpdateOne) ClearGuildID() *DiscordMessageUpdateOne {
+	_u.mutation.ClearGuildID()
+	return _u
+}
+
+// SetChannelID sets the "channel_id" field.
+func (_u *DiscordMessageUpdateOne) SetChannelID(v string) *DiscordMessageUpdateOne {
+	_u.mutation.SetChannelID(v)
+	return _u
+}
+
+// SetNillableChannelID sets the "channel_id" field if the given value is not nil.
+func (_u *DiscordMessageUpdateOne) SetNillableChannelID(v *string) *DiscordMessageUpdateOne {
+	if v != nil {
+		_u.SetChannelID(*v)
+	}
+	return _u
+}
+
+// ClearChannelID clears the value of the "channel_id" field.
+func (_u *DiscordMessageUpdateOne) ClearChannelID() *DiscordMessageUpdateOne {
+	_u.mutation.ClearChannelID()
+	return _u
+}
+
+// SetReplyToID sets the "reply_to_id" field.
+func (_u *DiscordMessageUpdateOne) SetReplyToID(v string) *DiscordMessageUpdateOne {
+	_u.mutation.SetReplyToID(v)
+	return _u
+}
+
+// SetNillableReplyToID sets the "reply_to_id" field if the given value is not nil.
+func (_u *DiscordMessageUpdateOne) SetNillableReplyToID(v *string) *DiscordMessageUpdateOne {
+	if v != nil {
+		_u.SetReplyToID(*v)
+	}
+	return _u
+}
+
+// ClearReplyToID clears the value of the "reply_to_id" field.
+func (_u *DiscordMessageUpdateOne) ClearReplyToID() *DiscordMessageUpdateOne {
+	_u.mutation.ClearReplyToID()
 	return _u
 }
 
@@ -379,6 +517,24 @@ func (_u *DiscordMessageUpdateOne) sqlSave(ctx context.Context) (_node *DiscordM
 	}
 	if value, ok := _u.mutation.Content(); ok {
 		_spec.SetField(discordmessage.FieldContent, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.GuildID(); ok {
+		_spec.SetField(discordmessage.FieldGuildID, field.TypeString, value)
+	}
+	if _u.mutation.GuildIDCleared() {
+		_spec.ClearField(discordmessage.FieldGuildID, field.TypeString)
+	}
+	if value, ok := _u.mutation.ChannelID(); ok {
+		_spec.SetField(discordmessage.FieldChannelID, field.TypeString, value)
+	}
+	if _u.mutation.ChannelIDCleared() {
+		_spec.ClearField(discordmessage.FieldChannelID, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReplyToID(); ok {
+		_spec.SetField(discordmessage.FieldReplyToID, field.TypeString, value)
+	}
+	if _u.mutation.ReplyToIDCleared() {
+		_spec.ClearField(discordmessage.FieldReplyToID, field.TypeString)
 	}
 	if value, ok := _u.mutation.EditedTimestamp(); ok {
 		_spec.SetField(discordmessage.FieldEditedTimestamp, field.TypeTime, value)

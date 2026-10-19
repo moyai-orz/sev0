@@ -17,7 +17,7 @@ func init() {
 	discordmessageFields := schema.DiscordMessage{}.Fields()
 	_ = discordmessageFields
 	// discordmessageDescAuthorID is the schema descriptor for author_id field.
-	discordmessageDescAuthorID := discordmessageFields[2].Descriptor()
+	discordmessageDescAuthorID := discordmessageFields[5].Descriptor()
 	// discordmessage.AuthorIDValidator is a validator for the "author_id" field. It is called by the builders before save.
 	discordmessage.AuthorIDValidator = discordmessageDescAuthorID.Validators[0].(func(string) error)
 	// discordmessageDescID is the schema descriptor for id field.

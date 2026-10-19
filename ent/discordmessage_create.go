@@ -31,6 +31,48 @@ func (_c *DiscordMessageCreate) SetContent(v string) *DiscordMessageCreate {
 	return _c
 }
 
+// SetGuildID sets the "guild_id" field.
+func (_c *DiscordMessageCreate) SetGuildID(v string) *DiscordMessageCreate {
+	_c.mutation.SetGuildID(v)
+	return _c
+}
+
+// SetNillableGuildID sets the "guild_id" field if the given value is not nil.
+func (_c *DiscordMessageCreate) SetNillableGuildID(v *string) *DiscordMessageCreate {
+	if v != nil {
+		_c.SetGuildID(*v)
+	}
+	return _c
+}
+
+// SetChannelID sets the "channel_id" field.
+func (_c *DiscordMessageCreate) SetChannelID(v string) *DiscordMessageCreate {
+	_c.mutation.SetChannelID(v)
+	return _c
+}
+
+// SetNillableChannelID sets the "channel_id" field if the given value is not nil.
+func (_c *DiscordMessageCreate) SetNillableChannelID(v *string) *DiscordMessageCreate {
+	if v != nil {
+		_c.SetChannelID(*v)
+	}
+	return _c
+}
+
+// SetReplyToID sets the "reply_to_id" field.
+func (_c *DiscordMessageCreate) SetReplyToID(v string) *DiscordMessageCreate {
+	_c.mutation.SetReplyToID(v)
+	return _c
+}
+
+// SetNillableReplyToID sets the "reply_to_id" field if the given value is not nil.
+func (_c *DiscordMessageCreate) SetNillableReplyToID(v *string) *DiscordMessageCreate {
+	if v != nil {
+		_c.SetReplyToID(*v)
+	}
+	return _c
+}
+
 // SetAuthorID sets the "author_id" field.
 func (_c *DiscordMessageCreate) SetAuthorID(v string) *DiscordMessageCreate {
 	_c.mutation.SetAuthorID(v)
@@ -185,6 +227,18 @@ func (_c *DiscordMessageCreate) createSpec() (*DiscordMessage, *sqlgraph.CreateS
 		_spec.SetField(discordmessage.FieldContent, field.TypeString, value)
 		_node.Content = value
 	}
+	if value, ok := _c.mutation.GuildID(); ok {
+		_spec.SetField(discordmessage.FieldGuildID, field.TypeString, value)
+		_node.GuildID = value
+	}
+	if value, ok := _c.mutation.ChannelID(); ok {
+		_spec.SetField(discordmessage.FieldChannelID, field.TypeString, value)
+		_node.ChannelID = value
+	}
+	if value, ok := _c.mutation.ReplyToID(); ok {
+		_spec.SetField(discordmessage.FieldReplyToID, field.TypeString, value)
+		_node.ReplyToID = value
+	}
 	if value, ok := _c.mutation.Timestamp(); ok {
 		_spec.SetField(discordmessage.FieldTimestamp, field.TypeTime, value)
 		_node.Timestamp = value
@@ -290,6 +344,60 @@ func (u *DiscordMessageUpsert) UpdateContent() *DiscordMessageUpsert {
 	return u
 }
 
+// SetGuildID sets the "guild_id" field.
+func (u *DiscordMessageUpsert) SetGuildID(v string) *DiscordMessageUpsert {
+	u.Set(discordmessage.FieldGuildID, v)
+	return u
+}
+
+// UpdateGuildID sets the "guild_id" field to the value that was provided on create.
+func (u *DiscordMessageUpsert) UpdateGuildID() *DiscordMessageUpsert {
+	u.SetExcluded(discordmessage.FieldGuildID)
+	return u
+}
+
+// ClearGuildID clears the value of the "guild_id" field.
+func (u *DiscordMessageUpsert) ClearGuildID() *DiscordMessageUpsert {
+	u.SetNull(discordmessage.FieldGuildID)
+	return u
+}
+
+// SetChannelID sets the "channel_id" field.
+func (u *DiscordMessageUpsert) SetChannelID(v string) *DiscordMessageUpsert {
+	u.Set(discordmessage.FieldChannelID, v)
+	return u
+}
+
+// UpdateChannelID sets the "channel_id" field to the value that was provided on create.
+func (u *DiscordMessageUpsert) UpdateChannelID() *DiscordMessageUpsert {
+	u.SetExcluded(discordmessage.FieldChannelID)
+	return u
+}
+
+// ClearChannelID clears the value of the "channel_id" field.
+func (u *DiscordMessageUpsert) ClearChannelID() *DiscordMessageUpsert {
+	u.SetNull(discordmessage.FieldChannelID)
+	return u
+}
+
+// SetReplyToID sets the "reply_to_id" field.
+func (u *DiscordMessageUpsert) SetReplyToID(v string) *DiscordMessageUpsert {
+	u.Set(discordmessage.FieldReplyToID, v)
+	return u
+}
+
+// UpdateReplyToID sets the "reply_to_id" field to the value that was provided on create.
+func (u *DiscordMessageUpsert) UpdateReplyToID() *DiscordMessageUpsert {
+	u.SetExcluded(discordmessage.FieldReplyToID)
+	return u
+}
+
+// ClearReplyToID clears the value of the "reply_to_id" field.
+func (u *DiscordMessageUpsert) ClearReplyToID() *DiscordMessageUpsert {
+	u.SetNull(discordmessage.FieldReplyToID)
+	return u
+}
+
 // SetEditedTimestamp sets the "edited_timestamp" field.
 func (u *DiscordMessageUpsert) SetEditedTimestamp(v time.Time) *DiscordMessageUpsert {
 	u.Set(discordmessage.FieldEditedTimestamp, v)
@@ -373,6 +481,69 @@ func (u *DiscordMessageUpsertOne) SetContent(v string) *DiscordMessageUpsertOne 
 func (u *DiscordMessageUpsertOne) UpdateContent() *DiscordMessageUpsertOne {
 	return u.Update(func(s *DiscordMessageUpsert) {
 		s.UpdateContent()
+	})
+}
+
+// SetGuildID sets the "guild_id" field.
+func (u *DiscordMessageUpsertOne) SetGuildID(v string) *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetGuildID(v)
+	})
+}
+
+// UpdateGuildID sets the "guild_id" field to the value that was provided on create.
+func (u *DiscordMessageUpsertOne) UpdateGuildID() *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateGuildID()
+	})
+}
+
+// ClearGuildID clears the value of the "guild_id" field.
+func (u *DiscordMessageUpsertOne) ClearGuildID() *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.ClearGuildID()
+	})
+}
+
+// SetChannelID sets the "channel_id" field.
+func (u *DiscordMessageUpsertOne) SetChannelID(v string) *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetChannelID(v)
+	})
+}
+
+// UpdateChannelID sets the "channel_id" field to the value that was provided on create.
+func (u *DiscordMessageUpsertOne) UpdateChannelID() *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateChannelID()
+	})
+}
+
+// ClearChannelID clears the value of the "channel_id" field.
+func (u *DiscordMessageUpsertOne) ClearChannelID() *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.ClearChannelID()
+	})
+}
+
+// SetReplyToID sets the "reply_to_id" field.
+func (u *DiscordMessageUpsertOne) SetReplyToID(v string) *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetReplyToID(v)
+	})
+}
+
+// UpdateReplyToID sets the "reply_to_id" field to the value that was provided on create.
+func (u *DiscordMessageUpsertOne) UpdateReplyToID() *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateReplyToID()
+	})
+}
+
+// ClearReplyToID clears the value of the "reply_to_id" field.
+func (u *DiscordMessageUpsertOne) ClearReplyToID() *DiscordMessageUpsertOne {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.ClearReplyToID()
 	})
 }
 
@@ -628,6 +799,69 @@ func (u *DiscordMessageUpsertBulk) SetContent(v string) *DiscordMessageUpsertBul
 func (u *DiscordMessageUpsertBulk) UpdateContent() *DiscordMessageUpsertBulk {
 	return u.Update(func(s *DiscordMessageUpsert) {
 		s.UpdateContent()
+	})
+}
+
+// SetGuildID sets the "guild_id" field.
+func (u *DiscordMessageUpsertBulk) SetGuildID(v string) *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetGuildID(v)
+	})
+}
+
+// UpdateGuildID sets the "guild_id" field to the value that was provided on create.
+func (u *DiscordMessageUpsertBulk) UpdateGuildID() *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateGuildID()
+	})
+}
+
+// ClearGuildID clears the value of the "guild_id" field.
+func (u *DiscordMessageUpsertBulk) ClearGuildID() *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.ClearGuildID()
+	})
+}
+
+// SetChannelID sets the "channel_id" field.
+func (u *DiscordMessageUpsertBulk) SetChannelID(v string) *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetChannelID(v)
+	})
+}
+
+// UpdateChannelID sets the "channel_id" field to the value that was provided on create.
+func (u *DiscordMessageUpsertBulk) UpdateChannelID() *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateChannelID()
+	})
+}
+
+// ClearChannelID clears the value of the "channel_id" field.
+func (u *DiscordMessageUpsertBulk) ClearChannelID() *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.ClearChannelID()
+	})
+}
+
+// SetReplyToID sets the "reply_to_id" field.
+func (u *DiscordMessageUpsertBulk) SetReplyToID(v string) *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.SetReplyToID(v)
+	})
+}
+
+// UpdateReplyToID sets the "reply_to_id" field to the value that was provided on create.
+func (u *DiscordMessageUpsertBulk) UpdateReplyToID() *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.UpdateReplyToID()
+	})
+}
+
+// ClearReplyToID clears the value of the "reply_to_id" field.
+func (u *DiscordMessageUpsertBulk) ClearReplyToID() *DiscordMessageUpsertBulk {
+	return u.Update(func(s *DiscordMessageUpsert) {
+		s.ClearReplyToID()
 	})
 }
 

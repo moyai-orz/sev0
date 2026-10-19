@@ -70,6 +70,21 @@ func Content(v string) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.FieldEQ(FieldContent, v))
 }
 
+// GuildID applies equality check predicate on the "guild_id" field. It's identical to GuildIDEQ.
+func GuildID(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldEQ(FieldGuildID, v))
+}
+
+// ChannelID applies equality check predicate on the "channel_id" field. It's identical to ChannelIDEQ.
+func ChannelID(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldEQ(FieldChannelID, v))
+}
+
+// ReplyToID applies equality check predicate on the "reply_to_id" field. It's identical to ReplyToIDEQ.
+func ReplyToID(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldEQ(FieldReplyToID, v))
+}
+
 // AuthorID applies equality check predicate on the "author_id" field. It's identical to AuthorIDEQ.
 func AuthorID(v string) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.FieldEQ(FieldAuthorID, v))
@@ -148,6 +163,231 @@ func ContentEqualFold(v string) predicate.DiscordMessage {
 // ContentContainsFold applies the ContainsFold predicate on the "content" field.
 func ContentContainsFold(v string) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.FieldContainsFold(FieldContent, v))
+}
+
+// GuildIDEQ applies the EQ predicate on the "guild_id" field.
+func GuildIDEQ(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldEQ(FieldGuildID, v))
+}
+
+// GuildIDNEQ applies the NEQ predicate on the "guild_id" field.
+func GuildIDNEQ(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNEQ(FieldGuildID, v))
+}
+
+// GuildIDIn applies the In predicate on the "guild_id" field.
+func GuildIDIn(vs ...string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldIn(FieldGuildID, vs...))
+}
+
+// GuildIDNotIn applies the NotIn predicate on the "guild_id" field.
+func GuildIDNotIn(vs ...string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNotIn(FieldGuildID, vs...))
+}
+
+// GuildIDGT applies the GT predicate on the "guild_id" field.
+func GuildIDGT(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldGT(FieldGuildID, v))
+}
+
+// GuildIDGTE applies the GTE predicate on the "guild_id" field.
+func GuildIDGTE(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldGTE(FieldGuildID, v))
+}
+
+// GuildIDLT applies the LT predicate on the "guild_id" field.
+func GuildIDLT(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldLT(FieldGuildID, v))
+}
+
+// GuildIDLTE applies the LTE predicate on the "guild_id" field.
+func GuildIDLTE(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldLTE(FieldGuildID, v))
+}
+
+// GuildIDContains applies the Contains predicate on the "guild_id" field.
+func GuildIDContains(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldContains(FieldGuildID, v))
+}
+
+// GuildIDHasPrefix applies the HasPrefix predicate on the "guild_id" field.
+func GuildIDHasPrefix(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldHasPrefix(FieldGuildID, v))
+}
+
+// GuildIDHasSuffix applies the HasSuffix predicate on the "guild_id" field.
+func GuildIDHasSuffix(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldHasSuffix(FieldGuildID, v))
+}
+
+// GuildIDIsNil applies the IsNil predicate on the "guild_id" field.
+func GuildIDIsNil() predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldIsNull(FieldGuildID))
+}
+
+// GuildIDNotNil applies the NotNil predicate on the "guild_id" field.
+func GuildIDNotNil() predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNotNull(FieldGuildID))
+}
+
+// GuildIDEqualFold applies the EqualFold predicate on the "guild_id" field.
+func GuildIDEqualFold(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldEqualFold(FieldGuildID, v))
+}
+
+// GuildIDContainsFold applies the ContainsFold predicate on the "guild_id" field.
+func GuildIDContainsFold(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldContainsFold(FieldGuildID, v))
+}
+
+// ChannelIDEQ applies the EQ predicate on the "channel_id" field.
+func ChannelIDEQ(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldEQ(FieldChannelID, v))
+}
+
+// ChannelIDNEQ applies the NEQ predicate on the "channel_id" field.
+func ChannelIDNEQ(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNEQ(FieldChannelID, v))
+}
+
+// ChannelIDIn applies the In predicate on the "channel_id" field.
+func ChannelIDIn(vs ...string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldIn(FieldChannelID, vs...))
+}
+
+// ChannelIDNotIn applies the NotIn predicate on the "channel_id" field.
+func ChannelIDNotIn(vs ...string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNotIn(FieldChannelID, vs...))
+}
+
+// ChannelIDGT applies the GT predicate on the "channel_id" field.
+func ChannelIDGT(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldGT(FieldChannelID, v))
+}
+
+// ChannelIDGTE applies the GTE predicate on the "channel_id" field.
+func ChannelIDGTE(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldGTE(FieldChannelID, v))
+}
+
+// ChannelIDLT applies the LT predicate on the "channel_id" field.
+func ChannelIDLT(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldLT(FieldChannelID, v))
+}
+
+// ChannelIDLTE applies the LTE predicate on the "channel_id" field.
+func ChannelIDLTE(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldLTE(FieldChannelID, v))
+}
+
+// ChannelIDContains applies the Contains predicate on the "channel_id" field.
+func ChannelIDContains(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldContains(FieldChannelID, v))
+}
+
+// ChannelIDHasPrefix applies the HasPrefix predicate on the "channel_id" field.
+func ChannelIDHasPrefix(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldHasPrefix(FieldChannelID, v))
+}
+
+// ChannelIDHasSuffix applies the HasSuffix predicate on the "channel_id" field.
+func ChannelIDHasSuffix(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldHasSuffix(FieldChannelID, v))
+}
+
+// ChannelIDIsNil applies the IsNil predicate on the "channel_id" field.
+func ChannelIDIsNil() predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldIsNull(FieldChannelID))
+}
+
+// ChannelIDNotNil applies the NotNil predicate on the "channel_id" field.
+func ChannelIDNotNil() predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNotNull(FieldChannelID))
+}
+
+// ChannelIDEqualFold applies the EqualFold predicate on the "channel_id" field.
+func ChannelIDEqualFold(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldEqualFold(FieldChannelID, v))
+}
+
+// ChannelIDContainsFold applies the ContainsFold predicate on the "channel_id" field.
+func ChannelIDContainsFold(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldContainsFold(FieldChannelID, v))
+}
+
+// ReplyToIDEQ applies the EQ predicate on the "reply_to_id" field.
+func ReplyToIDEQ(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldEQ(FieldReplyToID, v))
+}
+
+// ReplyToIDNEQ applies the NEQ predicate on the "reply_to_id" field.
+func ReplyToIDNEQ(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNEQ(FieldReplyToID, v))
+}
+
+// ReplyToIDIn applies the In predicate on the "reply_to_id" field.
+func ReplyToIDIn(vs ...string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldIn(FieldReplyToID, vs...))
+}
+
+// ReplyToIDNotIn applies the NotIn predicate on the "reply_to_id" field.
+func ReplyToIDNotIn(vs ...string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNotIn(FieldReplyToID, vs...))
+}
+
+// ReplyToIDGT applies the GT predicate on the "reply_to_id" field.
+func ReplyToIDGT(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldGT(FieldReplyToID, v))
+}
+
+// ReplyToIDGTE applies the GTE predicate on the "reply_to_id" field.
+func ReplyToIDGTE(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldGTE(FieldReplyToID, v))
+}
+
+// ReplyToIDLT applies the LT predicate on the "reply_to_id" field.
+func ReplyToIDLT(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldLT(FieldReplyToID, v))
+}
+
+// ReplyToIDLTE applies the LTE predicate on the "reply_to_id" field.
+func ReplyToIDLTE(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldLTE(FieldReplyToID, v))
+}
+
+// ReplyToIDContains applies the Contains predicate on the "reply_to_id" field.
+func ReplyToIDContains(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldContains(FieldReplyToID, v))
+}
+
+// ReplyToIDHasPrefix applies the HasPrefix predicate on the "reply_to_id" field.
+func ReplyToIDHasPrefix(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldHasPrefix(FieldReplyToID, v))
+}
+
+// ReplyToIDHasSuffix applies the HasSuffix predicate on the "reply_to_id" field.
+func ReplyToIDHasSuffix(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldHasSuffix(FieldReplyToID, v))
+}
+
+// ReplyToIDIsNil applies the IsNil predicate on the "reply_to_id" field.
+func ReplyToIDIsNil() predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldIsNull(FieldReplyToID))
+}
+
+// ReplyToIDNotNil applies the NotNil predicate on the "reply_to_id" field.
+func ReplyToIDNotNil() predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldNotNull(FieldReplyToID))
+}
+
+// ReplyToIDEqualFold applies the EqualFold predicate on the "reply_to_id" field.
+func ReplyToIDEqualFold(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldEqualFold(FieldReplyToID, v))
+}
+
+// ReplyToIDContainsFold applies the ContainsFold predicate on the "reply_to_id" field.
+func ReplyToIDContainsFold(v string) predicate.DiscordMessage {
+	return predicate.DiscordMessage(sql.FieldContainsFold(FieldReplyToID, v))
 }
 
 // AuthorIDEQ applies the EQ predicate on the "author_id" field.

@@ -18,6 +18,10 @@ func (DiscordMessage) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").NotEmpty().Immutable(),
 		field.Text("content"),
+		// Nullable for rows captured before channel metadata was recorded.
+		field.String("guild_id").Optional(),
+		field.String("channel_id").Optional(),
+		field.String("reply_to_id").Optional(),
 		field.String("author_id").NotEmpty().Immutable(),
 		field.Time("timestamp").Immutable(),
 		field.Time("edited_timestamp").Optional(),
@@ -37,6 +41,8 @@ func (DiscordMessage) Edges() []ent.Edge {
 
 func (DiscordMessage) Indexes() []ent.Index {
 	return []ent.Index{
+		index.Fields("guild_id", "channel_id", "timestamp"),
+		index.Fields("guild_id", "channel_id", "author_id", "timestamp"),
 		index.Fields("timestamp").Annotations(entsql.DescColumns("timestamp")),
 	}
 }

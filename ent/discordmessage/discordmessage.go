@@ -14,6 +14,12 @@ const (
 	FieldID = "id"
 	// FieldContent holds the string denoting the content field in the database.
 	FieldContent = "content"
+	// FieldGuildID holds the string denoting the guild_id field in the database.
+	FieldGuildID = "guild_id"
+	// FieldChannelID holds the string denoting the channel_id field in the database.
+	FieldChannelID = "channel_id"
+	// FieldReplyToID holds the string denoting the reply_to_id field in the database.
+	FieldReplyToID = "reply_to_id"
 	// FieldAuthorID holds the string denoting the author_id field in the database.
 	FieldAuthorID = "author_id"
 	// FieldTimestamp holds the string denoting the timestamp field in the database.
@@ -46,6 +52,9 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldContent,
+	FieldGuildID,
+	FieldChannelID,
+	FieldReplyToID,
 	FieldAuthorID,
 	FieldTimestamp,
 	FieldEditedTimestamp,
@@ -79,6 +88,21 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByContent orders the results by the content field.
 func ByContent(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldContent, opts...).ToFunc()
+}
+
+// ByGuildID orders the results by the guild_id field.
+func ByGuildID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGuildID, opts...).ToFunc()
+}
+
+// ByChannelID orders the results by the channel_id field.
+func ByChannelID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldChannelID, opts...).ToFunc()
+}
+
+// ByReplyToID orders the results by the reply_to_id field.
+func ByReplyToID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReplyToID, opts...).ToFunc()
 }
 
 // ByAuthorID orders the results by the author_id field.

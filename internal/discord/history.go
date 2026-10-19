@@ -124,7 +124,7 @@ func allowedHistoryChannels(guild *discordgo.Guild, channels []*discordgo.Channe
 		allowed = append(allowed, i.ChannelID)
 	}
 	for _, channel := range channels {
-		if channel.ID == i.ChannelID || (channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews) {
+		if channel.ID == i.ChannelID || (channel.Type != discordgo.ChannelTypeGuildText && channel.Type != discordgo.ChannelTypeGuildNews) || !publicHistoryChannel(guild, channel) {
 			continue
 		}
 		permissions, err := state.UserChannelPermissions(i.Member.User.ID, channel.ID)
@@ -151,4 +151,33 @@ func (b *DiscordBot) removeMessages(ctx context.Context, ids []string) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// Replies are public in the invoking channel. Cross-channel evidence must be
+// readable by everyone in the server, not merely by the requesting member.
+// The invoking channel itself is safe because it has the same audience.
+func publicHistoryChannel(guild *discordgo.Guild, channel *discordgo.Channel) bool {
+	const required = discordgo.PermissionViewChannel | discordgo.PermissionReadMessageHistory
+	var permissions int64
+	for _, role := range guild.Roles {
+		if role.ID == guild.ID {
+			permissions = role.Permissions
+			break
+		}
+	}
+	for _, overwrite := range channel.PermissionOverwrites {
+		if overwrite.Type == discordgo.PermissionOverwriteTypeRole && overwrite.ID == guild.ID {
+			permissions &^= overwrite.Deny
+			permissions |= overwrite.Allow
+		}
+	}
+	if permissions&required != required {
+		return false
+	}
+	for _, overwrite := range channel.PermissionOverwrites {
+		if overwrite.ID != guild.ID && overwrite.Deny&required != 0 {
+			return false
+		}
+	}
+	return true
 }

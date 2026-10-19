@@ -91,3 +91,20 @@ func TestTruncateDiscordUnicode(t *testing.T) {
 		t.Fatal("short output changed")
 	}
 }
+
+func TestPublicHistoryDoesNotDiscloseRestrictedChannels(t *testing.T) {
+	const read = discordgo.PermissionViewChannel | discordgo.PermissionReadMessageHistory
+	guild := &discordgo.Guild{ID: "g", Roles: []*discordgo.Role{{ID: "g", Permissions: read}}}
+	channel := &discordgo.Channel{ID: "c", GuildID: "g"}
+	if !publicHistoryChannel(guild, channel) {
+		t.Fatal("public channel excluded")
+	}
+	channel.PermissionOverwrites = []*discordgo.PermissionOverwrite{{ID: "some-member", Type: discordgo.PermissionOverwriteTypeMember, Deny: discordgo.PermissionViewChannel}}
+	if publicHistoryChannel(guild, channel) {
+		t.Fatal("member-restricted channel exposed")
+	}
+	channel.PermissionOverwrites = []*discordgo.PermissionOverwrite{{ID: "g", Type: discordgo.PermissionOverwriteTypeRole, Deny: discordgo.PermissionViewChannel}, {ID: "requester", Type: discordgo.PermissionOverwriteTypeMember, Allow: read}}
+	if publicHistoryChannel(guild, channel) {
+		t.Fatal("requester's private access exposed to public")
+	}
+}

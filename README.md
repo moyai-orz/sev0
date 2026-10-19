@@ -41,15 +41,15 @@ go vet ./...
 
 `/ask` now receives recent messages from the current channel and can search
 recorded text across other text/announcement channels in the same server that
-the requester can view and read history from. The model can filter by literal
+everyone can view and read history from, plus the invoking channel itself. The model can filter by literal
 keywords, author, dates, or channel, page through results, and inspect nearby
 messages and the direct reply parent. Historical claims are prompted to include
 Discord message links, author names, and dates.
 
-Answers are **ephemeral (visible only to the requester)**, because someone asking
-in a public channel may also have access to restricted channels. Other threads
-are excluded from cross-channel search; the thread where `/ask` was invoked is
-included if its history is readable. Permission lookup failures stop retrieval.
+Answers are **public in the invoking channel**. Cross-channel retrieval excludes
+restricted channels, even if the requester can access them, so private excerpts
+are not disclosed to a broader audience. The invoking channel (including a
+thread) can supply its own history. Permission lookup failures stop retrieval.
 
 Each user gets the last four successful exchanges in the same channel for
 follow-up questions. This memory expires after 15 minutes, is capped at 128
@@ -75,3 +75,10 @@ with the unused pgvector column represented as text. They do not replace a live
 PostgreSQL migration check or a Discord/OpenRouter smoke test. Running tests
 requires CGO and a C compiler for the SQLite test driver; the bot itself does not
 use SQLite.
+
+Reply delivery caps Discord content at 2,000 UTF-16 code units. Transient delivery
+failures get one retry, followed by a short fallback notice; invalid payloads
+skip straight to that notice. Model timeouts use a fresh delivery context, and
+unexpected handler failures attempt a terminal error response. Discord outages,
+expired interaction tokens, or process termination can still prevent delivery;
+completion/failure logs include the interaction ID for diagnosis.

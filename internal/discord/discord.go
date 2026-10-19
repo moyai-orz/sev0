@@ -179,21 +179,32 @@ func (b *DiscordBot) handleAsk(
 		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{Type: discordgo.InteractionResponseChannelMessageWithSource, Data: &discordgo.InteractionResponseData{Content: "Use /ask in a server channel.", Flags: discordgo.MessageFlagsEphemeral}})
 		return
 	}
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+	})
+	if err != nil {
+		b.logger.Error("failed to defer interaction", "err", err)
+		return
+	}
+
+	completed := false
+	started := time.Now()
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			b.logger.Error("ask handler panicked", "interaction_id", i.ID, "panic", recovered)
+		}
+		if !completed {
+			b.finishAsk(s, i.Interaction, "Something interrupted my reply. Please try /ask again.")
+		}
+		b.logger.Info("ask finished", "interaction_id", i.ID, "elapsed", time.Since(started))
+	}()
 	b.phc.Enqueue(posthog.Capture{
 		DistinctId: i.Member.User.ID,
 		Event:      "ask",
 		Properties: posthog.NewProperties().
 			Set("global_name", i.Member.User.GlobalName),
 	})
-
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{Flags: discordgo.MessageFlagsEphemeral},
-	})
-	if err != nil {
-		b.logger.Error("failed to defer interaction", "err", err)
-		return
-	}
 
 	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
@@ -215,7 +226,8 @@ func (b *DiscordBot) handleAsk(
 	if scopeErr != nil {
 		b.logger.Error("failed to determine history permissions", "err", scopeErr)
 		content := "I couldn't check channel access, so I can't safely search history right now. Please try again."
-		_, _ = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{Content: &content})
+		completed = true
+		b.finishAsk(s, i.Interaction, content)
 		return
 	}
 	ctx = tools.WithScope(ctx, i.GuildID, i.ChannelID, channels...)
@@ -246,6 +258,9 @@ func (b *DiscordBot) handleAsk(
 	if err != nil {
 		b.logger.Error("failed to generate text", "err", err)
 		content = "I couldn't finish that search. Please try again."
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			content = "That took too long, so I stopped the search. Please try a narrower question."
+		}
 		var providerErr *openai.Error
 		if errors.As(err, &providerErr) && providerErr.StatusCode == 429 {
 			content = "The free model is busy or rate-limited right now. Please try again shortly."
@@ -257,15 +272,11 @@ func (b *DiscordBot) handleAsk(
 	}
 
 	content = truncateDiscord(content, 2000)
-	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-		Content:         &content,
-		AllowedMentions: &discordgo.MessageAllowedMentions{},
-	})
-	if err != nil {
-		b.logger.Error("failed to edit interaction response", "err", err)
-	} else if generated {
+	completed = true
+	if b.finishAsk(s, i.Interaction, content) && generated {
 		b.conversations.add(conversationID, channels, question, content, time.Now())
 	}
+
 }
 
 // Discord counts UTF-16 code units; avoid splitting Unicode characters.

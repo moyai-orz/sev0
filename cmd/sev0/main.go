@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"sev0/ent"
 	"sev0/internal/contextkeys"
@@ -17,7 +18,8 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/posthog/posthog-go"
 )
@@ -26,14 +28,20 @@ func main() {
 	ctx := context.Background()
 
 	err := godotenv.Load()
-	if err != nil {
-		slog.Error("failed loading *.env file")
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		slog.Error("failed loading .env file", "err", err)
+		return
 	}
+	slog.Info("starting sev0")
 
-	phc, _ := posthog.NewWithConfig(
+	phc, err := posthog.NewWithConfig(
 		os.Getenv("POSTHOG_KEY"),
 		posthog.Config{Endpoint: "https://us.i.posthog.com"},
 	)
+	if err != nil {
+		slog.Error("failed to initialize analytics", "err", err)
+		return
+	}
 	defer phc.Close()
 
 	baseLogHandler := slog.NewTextHandler(
@@ -55,32 +63,47 @@ func main() {
 		),
 	))
 
-	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
+	logger.Info("connecting to database")
+	dbConfig, err := databaseConfig(os.Getenv("DATABASE_URL"))
 	if err != nil {
 		logger.Error("unable to connect to db", "err", err)
 		return
 	}
 
-	// Enable pgvector extension
-	if _, err := db.ExecContext(ctx, "CREATE EXTENSION IF NOT EXISTS vector;"); err != nil {
+	db := stdlib.OpenDB(*dbConfig)
+	defer db.Close()
+	dbCtx, cancelDB := context.WithTimeout(ctx, 30*time.Second)
+	defer cancelDB()
+	if err := db.PingContext(dbCtx); err != nil {
+		logger.Error("database connection failed; check DATABASE_URL and database availability", "err", err)
+		return
+	}
+	logger.Info("enabling pgvector extension")
+	// Enable pgvector extension within the database startup deadline.
+	if _, err := db.ExecContext(dbCtx, "CREATE EXTENSION IF NOT EXISTS vector;"); err != nil {
 		logger.Error("failed to enable pgvector extension", "err", err)
 		return
 	}
+	cancelDB()
 	drv := entsql.OpenDB(dialect.Postgres, db)
 	entClient := ent.NewClient(ent.Driver(drv))
 
+	logger.Info("initializing OpenRouter")
 	gm, err := genkitmagic.Init(ctx, entClient)
 	if err != nil {
 		logger.Error("failed to initialize genkit", "err", err)
 		return
 	}
 
-	// Run the auto migration tool.
-	if err := entClient.Schema.Create(context.Background()); err != nil {
+	logger.Info("running database migrations")
+	migrationCtx, cancelMigration := context.WithTimeout(ctx, 30*time.Second)
+	defer cancelMigration()
+	if err := entClient.Schema.Create(migrationCtx); err != nil {
 		logger.Error("failed creating schema resources", "err", err)
 		return
 	}
 
+	cancelMigration()
 	bot, err := discord.NewDiscordBot(entClient, gm, phc, logger)
 	if err != nil {
 		logger.Error("failed to create discord bot", "err", err)
@@ -89,6 +112,7 @@ func main() {
 
 	go startHTTPServer(logger)
 
+	logger.Info("connecting to Discord")
 	if err := bot.Start(); err != nil {
 		logger.Error("failed to start discord bot", "err", err)
 		return
@@ -115,4 +139,17 @@ func startHTTPServer(logger *slog.Logger) {
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		logger.Error("failed to start http server", "err", err)
 	}
+}
+
+// databaseConfig bounds each address attempt so an unreachable IPv4 address
+// cannot prevent pgx from trying the hostname's IPv6 address for minutes.
+func databaseConfig(databaseURL string) (*pgx.ConnConfig, error) {
+	config, err := pgx.ParseConfig(databaseURL)
+	if err != nil {
+		return nil, err
+	}
+	if config.ConnectTimeout == 0 {
+		config.ConnectTimeout = 5 * time.Second
+	}
+	return config, nil
 }
